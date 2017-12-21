@@ -8,6 +8,6 @@ Read-Compile-Run-Loop - a REPL variant for C++ (much lighter than cling) - WILL 
 
 TODO:
 
-- test ninja - since it will be the fastest
+- make it work under linux
 - add a PCH
 - everything else :D

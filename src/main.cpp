@@ -67,33 +67,35 @@ string get_path_to_exe() {
 void f() { cout << "forced print!" << endl; }
 
 void reconstruct_plugin_source_file() {
-	ofstream myfile(CRCL_PLUGIN_FILE);
-	myfile << "#include \"host_app.h\"\n";
-	myfile.close();
+    ofstream myfile(CRCL_PLUGIN_FILE);
+    myfile << "#include \"host_app.h\"\n";
+    myfile.close();
 }
 
 int main() {
     // init the plugin file
-	reconstruct_plugin_source_file();
+    reconstruct_plugin_source_file();
 
     vector<pair<string, DynamicLib>> plugins;
     string                           line;
 
     getline(cin, line);
     while(line != "q") {
-		ofstream myfile(CRCL_PLUGIN_FILE, ios::out | ios::app);
-		myfile << line << endl;
-		myfile.close();
+        ofstream myfile(CRCL_PLUGIN_FILE, ios::out | ios::app);
+        myfile << line << endl;
+        myfile.close();
 
         system("cls");
 
-        system("cmake --build " CRCL_BUILD_FOLDER " --target plugin " CRCL_CONFIG " -- /verbosity:quiet "
-               "/consoleloggerparameters:PerformanceSummary");
+        system("cmake --build " CRCL_BUILD_FOLDER " --target plugin " CRCL_ADDITIONAL_FLAGS);
+
+        //std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
         auto plugin_name =
                 get_path_to_exe() + "plugin_" + to_string(plugins.size()) + PLUGIN_EXTENSION;
         const auto copy_res = CopyDynlib((get_path_to_exe() + "plugin" PLUGIN_EXTENSION).c_str(),
                                          plugin_name.c_str());
+
         assert(copy_res);
 
         auto plugin = LoadDynlib(plugin_name.c_str());
