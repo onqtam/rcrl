@@ -88,7 +88,7 @@ int main() {
         system("cls");
 
 		// TODO: also figure out how to be able to 
-        system("cmake --build " CRCL_BUILD_FOLDER " --target plugin --config " CRCL_CONFIG " -- /verbosity:quiet "
+        system("cmake --build " CRCL_BUILD_FOLDER " --target plugin " CRCL_CONFIG " -- /verbosity:quiet "
                "/consoleloggerparameters:PerformanceSummary");
 
         auto plugin_name =
@@ -112,10 +112,6 @@ int main() {
     if(plugins.size())
         system((string("del ") + get_path_to_exe() + "plugin_*" PLUGIN_EXTENSION " /Q").c_str());
     plugins.clear();
-
-    // also cleanup plugin source file in case it was left in an uncompiling state
-	ofstream myfile(CRCL_PLUGIN_FILE);
-    myfile.close();
 
     return 0;
 }

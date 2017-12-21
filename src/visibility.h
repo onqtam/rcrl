@@ -13,3 +13,6 @@
 #else // CRCL_HOST_APP
 #define HOST_API SYMBOL_IMPORT
 #endif // CRCL_HOST_APP
+
+// can also use WINDOWS_EXPORT_ALL_SYMBOLS in CMake for Windows
+// instead of explicitly annotating each symbol in the host app

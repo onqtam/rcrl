@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.0.0)
 
 project(rcrl)
 
-
 set(OUTPUT_DIR ${PROJECT_BINARY_DIR}/bin/)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR})
@@ -20,16 +19,14 @@ add_executable(host_app src/main.cpp src/visibility.h src/host_app.h)
 set_target_properties(host_app PROPERTIES ENABLE_EXPORTS ON) # so the plugin can link to the executable
 target_compile_definitions(host_app PRIVATE "CRCL_PLUGIN_FILE=\"${plugin_file}\"")
 target_compile_definitions(host_app PRIVATE "CRCL_BUILD_FOLDER=\"${PROJECT_BINARY_DIR}\"")
-target_compile_definitions(host_app PRIVATE "CRCL_CONFIG=\"$(Configuration)\"")
 target_compile_definitions(host_app PRIVATE "CRCL_HOST_APP")
-# can also use WINDOWS_EXPORT_ALL_SYMBOLS
-target_include_directories(host_app PUBLIC src)
-
-if(MSVC AND NOT ${CMAKE_GENERATOR} STREQUAL "Ninja")
-    set(OUTPUT_DIR ${PROJECT_BINARY_DIR}/../../bin/${bin_dir})
+if(MSVC AND NOT ${CMAKE_GENERATOR} STREQUAL "Ninja" AND NOT CMAKE_GENERATOR STREQUAL "NMake Makefiles")
+    target_compile_definitions(host_app PRIVATE "CRCL_CONFIG=\"--config $(Configuration)\"")
 endif()
+target_include_directories(host_app PUBLIC src)
 
 file(WRITE ${plugin_file} "") # touch the file so it exists
 
 add_library(plugin SHARED EXCLUDE_FROM_ALL ${plugin_file})
+set_target_properties(plugin PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD 1) # exclude it even for Visual Studio when building the whole solution
 target_link_libraries(plugin host_app)
