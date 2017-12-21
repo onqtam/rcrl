@@ -1,0 +1,62 @@
+sudo: false
+language: c++
+
+notifications:
+  email: false
+
+addons:
+  # these apt sources will be referenced later (by using *name)
+  apt:
+    sources: &apt_sources
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-trusty
+      - llvm-toolchain-trusty-5.0
+
+compiler: clang
+os: linux
+
+matrix:
+  include:
+    # GCC 7
+    - env: COMPILER=g++-7
+      compiler: gcc
+      addons: &gcc7
+        apt:
+          packages: ["g++-7"]
+          sources: *apt_sources
+
+    # Clang 5.0
+    - env: COMPILER=clang++-5.0
+      addons: &clang5
+        apt:
+          packages: ["clang-5.0", "libc++-dev", "libc++abi-dev"]
+          sources: *apt_sources
+
+  allow_failures:
+
+install:
+  - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
+  - mkdir ${DEPS_DIR} && cd ${DEPS_DIR}
+
+  # setup newer cmake
+  - |
+    if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
+      CMAKE_URL="http://www.cmake.org/files/v3.7/cmake-3.7.2-Linux-x86_64.tar.gz"
+      mkdir cmake && travis_retry wget --no-check-certificate --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake
+      export PATH=${DEPS_DIR}/cmake/bin:${PATH}
+    else
+      brew update
+      brew outdated cmake || brew upgrade cmake
+    fi
+  - cd ${TRAVIS_BUILD_DIR}
+
+  - export CXX="${COMPILER}"
+
+before_script:
+  - ${CXX} --version
+
+script:
+  - mkdir build
+  - cd build
+  - cmake ..
+  - cmake --build .
