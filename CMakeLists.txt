@@ -14,21 +14,14 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++latest")
 endif()
 
-#if(WIN32)
-#    set(symbol_export "__declspec(dllexport)")
-#    set(symbol_import "__declspec(dllimport)")
-#else()
-#    set(symbol_export "__attribute__((visibility(\"default\")))")
-#    set(symbol_import "")
-#endif()
-
 set(plugin_file ${PROJECT_BINARY_DIR}/plugin.cpp)
 
 add_executable(host_app src/main.cpp src/visibility.h src/host_app.h)
 set_target_properties(host_app PROPERTIES ENABLE_EXPORTS ON) # so the plugin can link to the executable
-target_compile_definitions(host_app PRIVATE "PLUGIN_FILE=\"${plugin_file}\"")
-target_compile_definitions(host_app PRIVATE "BUILD_FOLDER=\"${PROJECT_BINARY_DIR}\"")
-target_compile_definitions(host_app PRIVATE "HOST_APP")
+target_compile_definitions(host_app PRIVATE "CRCL_PLUGIN_FILE=\"${plugin_file}\"")
+target_compile_definitions(host_app PRIVATE "CRCL_BUILD_FOLDER=\"${PROJECT_BINARY_DIR}\"")
+target_compile_definitions(host_app PRIVATE "CRCL_CONFIG=\"$(Configuration)\"")
+target_compile_definitions(host_app PRIVATE "CRCL_HOST_APP")
 # can also use WINDOWS_EXPORT_ALL_SYMBOLS
 target_include_directories(host_app PUBLIC src)
 
@@ -38,5 +31,5 @@ endif()
 
 file(WRITE ${plugin_file} "") # touch the file so it exists
 
-add_library(plugin SHARED ${plugin_file})
+add_library(plugin SHARED EXCLUDE_FROM_ALL ${plugin_file})
 target_link_libraries(plugin host_app)

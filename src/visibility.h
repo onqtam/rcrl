@@ -8,8 +8,8 @@
 #define SYMBOL_IMPORT
 #endif // _WIN32
 
-#ifdef HOST_APP
+#ifdef CRCL_HOST_APP
 #define HOST_API SYMBOL_EXPORT
-#else // HOST_APP
+#else // CRCL_HOST_APP
 #define HOST_API SYMBOL_IMPORT
-#endif // HOST_APP
+#endif // CRCL_HOST_APP
