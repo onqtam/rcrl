@@ -87,7 +87,6 @@ int main() {
 
         system("cls");
 
-		// TODO: also figure out how to be able to 
         system("cmake --build " CRCL_BUILD_FOLDER " --target plugin " CRCL_CONFIG " -- /verbosity:quiet "
                "/consoleloggerparameters:PerformanceSummary");
 

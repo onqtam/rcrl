@@ -28,5 +28,12 @@ target_include_directories(host_app PUBLIC src)
 file(WRITE ${plugin_file} "") # touch the file so it exists
 
 add_library(plugin SHARED EXCLUDE_FROM_ALL ${plugin_file})
-set_target_properties(plugin PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD 1) # exclude it even for Visual Studio when building the whole solution
+# link with the host app so we can call stuff from it
 target_link_libraries(plugin host_app)
+# exclude it even for Visual Studio when building the whole solution (EXCLUDE_FROM_ALL is not enough)
+set_target_properties(plugin PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD 1)
+if(MSVC)
+    # we don't want .pdb files for the plugin because when we are within Visual Studio and debugging the application it locks
+    # the .pdb for the original .dll and subsequent compiles fail even though we have loaded copies of the original .dll
+    set_target_properties(plugin PROPERTIES LINK_FLAGS /DEBUG:NONE)
+endif()
