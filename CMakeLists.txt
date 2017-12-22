@@ -31,6 +31,9 @@ target_compile_definitions(host_app PRIVATE "CRCL_BUILD_FOLDER=\"${PROJECT_BINAR
 target_compile_definitions(host_app PRIVATE "CRCL_HOST_APP")
 target_compile_definitions(host_app PRIVATE "CRCL_ADDITIONAL_FLAGS=\"${additional_flags}\"")
 target_include_directories(host_app PUBLIC src)
+if(NOT WIN32)
+    target_link_libraries(host_app PRIVATE dl)
+endif()
 
 add_library(plugin SHARED EXCLUDE_FROM_ALL ${plugin_file})
 # link with the host app so we can call stuff from it
