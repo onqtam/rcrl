@@ -1,4 +1,5 @@
 #include "host_app.h"
+#include "TextEditor.h"
 
 #include <chrono>
 #include <thread>
@@ -83,7 +84,7 @@ int main() {
 
     if(!glfwInit())
         return 1;
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "Read-Compile-Run-Loop - REPL for C++", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(1366, 768, "Read-Compile-Run-Loop - REPL for C++", nullptr, nullptr);
     glfwMakeContextCurrent(window);
 
     // Setup ImGui binding
@@ -96,8 +97,13 @@ int main() {
 
     char text[1024 * 16] = "";
 
-	string code;
-	string statuses;
+    // an editor instance - for the already submitted code
+    TextEditor editor;
+    editor.SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus());
+    editor.SetReadOnly(true);
+
+    string code;
+    string statuses;
 
     // Main loop
     while(!glfwWindowShouldClose(window)) {
@@ -113,19 +119,11 @@ int main() {
         auto flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
 
         if(ImGui::Begin("console", nullptr, flags)) {
-            static bool just_submitted                     = false;
-            static bool just_submitted_2nd_pass_for_scroll = false;
+            static bool just_submitted = false;
 
-            const auto text_field_height = ImGui::GetTextLineHeight() * 16;
+            const auto text_field_height = ImGui::GetTextLineHeight() * 20;
             ImGui::BeginChild("source code", ImVec2(700, text_field_height));
-            ImGui::InputTextMultiline("##source", code.data(), code.size(), ImVec2(-1.0f, text_field_height),
-                                      ImGuiInputTextFlags_ReadOnly);
-            if(just_submitted_2nd_pass_for_scroll) {
-                ImGui::BeginChild(ImGui::GetID("##source"));
-                ImGui::SetScrollY(ImGui::GetScrollMaxY());
-                ImGui::EndChild();
-                just_submitted_2nd_pass_for_scroll = false;
-            }
+            editor.Render("TextEditor");
             ImGui::EndChild();
             ImGui::SameLine();
             ImGui::BeginChild("compiler errors", ImVec2(0, text_field_height));
@@ -133,10 +131,8 @@ int main() {
                                       ImGuiInputTextFlags_ReadOnly);
             ImGui::EndChild();
 
-            if(just_submitted) {
+            if(just_submitted)
                 ImGui::SetKeyboardFocusHere();
-                just_submitted_2nd_pass_for_scroll = true;
-            }
             just_submitted =
                     ImGui::InputTextMultiline("##current", text, IM_ARRAYSIZE(text), ImVec2(-1.0f, text_field_height),
                                               ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AllowTabInput);
@@ -148,6 +144,9 @@ int main() {
                 if(text[len - 1] != '\n')
                     code += '\n';
 
+                editor.SetText(code);
+                editor.SetCursorPosition({editor.GetTotalLines(), 1});
+
                 // append to file
                 ofstream myfile(CRCL_PLUGIN_FILE, ios::out | ios::app);
                 myfile << text << endl;
@@ -158,9 +157,9 @@ int main() {
 
                 if(res) {
                     // errors occurred
-					statuses += "ERRORED\n";
+                    statuses += "ERRORED\n";
                 } else {
-					statuses += "SUCCESS\n";
+                    statuses += "SUCCESS\n";
 
                     // clear the entered text
                     text[0] = '\0';

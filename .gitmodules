@@ -4,3 +4,6 @@
 [submodule "src/third_party/imgui"]
 	path = src/third_party/imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "src/third_party/ImGuiColorTextEdit"]
+	path = src/third_party/ImGuiColorTextEdit
+	url = https://github.com/BalazsJako/ImGuiColorTextEdit.git
