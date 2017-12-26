@@ -15,9 +15,9 @@ TODO:
     - synchronization
     - objects spinning in the background
 - redirect the output temporarily while loading the lib?
-- syntax highlighting of history
 - factor it in a few easy-to-use functions
 
 - make it work under linux
 - add a PCH
+- read up on 'lexer programming'
 - http://cppnow.org/2018-conference/announcements/2017/12/03/call-for-submission.html

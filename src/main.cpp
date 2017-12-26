@@ -78,6 +78,17 @@ void reconstruct_plugin_source_file() {
     myfile.close();
 }
 
+// my own callback - need to add the carriage return symbols to make ImGuiColorTextEdit work when 'enter' is pressed
+void RCRL_ImGui_ImplGlfwGL2_KeyCallback(GLFWwindow* w, int key, int scancode, int action, int mods)
+{
+	// call the callback from the imgui/glfw integration
+	ImGui_ImplGlfwGL2_KeyCallback(w, key, scancode, action, mods);
+
+	ImGuiIO& io = ImGui::GetIO();
+	if (key == GLFW_KEY_ENTER && (action == GLFW_PRESS || action == GLFW_REPEAT))
+		io.AddInputCharacter((unsigned short)'\r');
+}
+
 int main() {
     // Setup window
     glfwSetErrorCallback([](int error, const char* description) { cerr << error << " " << description << endl; });
@@ -90,6 +101,9 @@ int main() {
     // Setup ImGui binding
     ImGui_ImplGlfwGL2_Init(window, true);
 
+	// overwrite with my own callback
+	glfwSetKeyCallback(window, RCRL_ImGui_ImplGlfwGL2_KeyCallback);
+
     // init the plugin file
     reconstruct_plugin_source_file();
 
@@ -100,7 +114,7 @@ int main() {
     // an editor instance - for the already submitted code
     TextEditor editor;
     editor.SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus());
-    editor.SetReadOnly(true);
+    //editor.SetReadOnly(true);
 
     string code;
     string statuses;
