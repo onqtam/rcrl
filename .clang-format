@@ -6,7 +6,7 @@ Standard: Cpp11
 IndentWidth: 4
 TabWidth: 4
 UseTab: Never
-ColumnLimit: 100
+ColumnLimit: 120
 ReflowComments: false
 SortIncludes: false
 SortUsingDeclarations: true

@@ -8,6 +8,16 @@ Read-Compile-Run-Loop - a REPL variant for C++ (much lighter than cling) - WILL 
 
 TODO:
 
+- get the 3 sections working
+- implement cleanup
+- use a process library to get the output from the compiler
+- make the execution non-blocking
+    - synchronization
+    - objects spinning in the background
+- redirect the output temporarily while loading the lib?
+- syntax highlighting of history
+- factor it in a few easy-to-use functions
+
 - make it work under linux
 - add a PCH
-- everything else :D
+- http://cppnow.org/2018-conference/announcements/2017/12/03/call-for-submission.html
