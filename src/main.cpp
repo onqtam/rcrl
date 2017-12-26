@@ -109,14 +109,15 @@ int main() {
 
     vector<pair<string, DynamicLib>> plugins;
 
-    char text[1024 * 16] = "";
-
     // an editor instance - for the already submitted code
-    TextEditor editor;
-    editor.SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus());
-    //editor.SetReadOnly(true);
+    TextEditor history;
+	history.SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus());
+	history.SetReadOnly(true);
 
-    string code;
+	// an editor instance - for the core being currently written
+	TextEditor editor;
+	editor.SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus());
+
     string statuses;
 
     // Main loop
@@ -133,11 +134,9 @@ int main() {
         auto flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
 
         if(ImGui::Begin("console", nullptr, flags)) {
-            static bool just_submitted = false;
-
             const auto text_field_height = ImGui::GetTextLineHeight() * 20;
-            ImGui::BeginChild("source code", ImVec2(700, text_field_height));
-            editor.Render("TextEditor");
+            ImGui::BeginChild("history code", ImVec2(700, text_field_height));
+			history.Render("History");
             ImGui::EndChild();
             ImGui::SameLine();
             ImGui::BeginChild("compiler errors", ImVec2(0, text_field_height));
@@ -145,25 +144,20 @@ int main() {
                                       ImGuiInputTextFlags_ReadOnly);
             ImGui::EndChild();
 
-            if(just_submitted)
-                ImGui::SetKeyboardFocusHere();
-            just_submitted =
-                    ImGui::InputTextMultiline("##current", text, IM_ARRAYSIZE(text), ImVec2(-1.0f, text_field_height),
-                                              ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AllowTabInput);
+			ImGui::BeginChild("source code", ImVec2(-1.f, text_field_height));
+			editor.Render("Code");
+			ImGui::EndChild();
 
-            // submit
-            if(just_submitted) {
-                auto len = strlen(text);
-                code += text;
-                if(text[len - 1] != '\n')
-                    code += '\n';
+			ImGuiIO& io = ImGui::GetIO();
+			if((io.KeysDown[GLFW_KEY_ENTER] && io.KeyCtrl) && (editor.GetTotalLines() > 1 || editor.GetText().size() > 1)) {
+				auto code = editor.GetText();
 
-                editor.SetText(code);
-                editor.SetCursorPosition({editor.GetTotalLines(), 1});
+				history.SetText(history.GetText() + code);
+                history.SetCursorPosition({history.GetTotalLines(), 1});
 
                 // append to file
                 ofstream myfile(CRCL_PLUGIN_FILE, ios::out | ios::app);
-                myfile << text << endl;
+                myfile << code << endl;
                 myfile.close();
 
                 // rebuild the plugin
@@ -175,8 +169,9 @@ int main() {
                 } else {
                     statuses += "SUCCESS\n";
 
-                    // clear the entered text
-                    text[0] = '\0';
+					// clear the editor
+					editor.SetText("\r"); // an empty string "" breaks it for some reason...
+					editor.SetCursorPosition({ 0, 0 });
 
                     // copy the plugin
                     auto plugin_name = get_path_to_exe() + "plugin_" + to_string(plugins.size()) + PLUGIN_EXTENSION;
