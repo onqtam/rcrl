@@ -54,6 +54,7 @@ install:
 
 before_script:
   - ${CXX} --version
+  - git submodule update --init --recursive
 
 script:
   - mkdir build

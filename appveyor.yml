@@ -11,6 +11,9 @@ clone_depth: 500
 matrix:
   fast_finish: false
 
+before_build:
+  - git submodule update --init --recursive
+
 build_script:
   - mkdir build
   - cd build
