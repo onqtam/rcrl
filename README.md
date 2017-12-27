@@ -1,5 +1,5 @@
 # rcrl
-Read-Compile-Run-Loop - a REPL variant for C++ (much lighter than cling) - WILL WORK ON IT IN THE FOLLOWING DAYS
+Read-Compile-Run-Loop - a REPL variant for C++ (much lighter than cling)
 
 [![Windows status](https://ci.appveyor.com/api/projects/status/fp0sqit57eorgswb/branch/master?svg=true)](https://ci.appveyor.com/project/onqtam/rcrl/branch/master)
 [![Linux Status](https://travis-ci.org/onqtam/rcrl.svg?branch=master)](https://travis-ci.org/onqtam/rcrl)

@@ -161,7 +161,14 @@ int main() {
                 myfile.close();
 
                 // rebuild the plugin
-                int res = system("cmake --build " CRCL_BUILD_FOLDER " --target plugin " CRCL_ADDITIONAL_FLAGS);
+                int res = system("cmake --build " CRCL_BUILD_FOLDER " --target plugin"
+#ifdef CRCL_CONFIG
+                                 " --config " CRCL_CONFIG
+#endif // multi config IDE
+#if defined(CRCL_CONFIG) && defined(_MSC_VER)
+                                 " -- /verbosity:quiet /consoleloggerparameters:PerformanceSummary"
+#endif // Visual Studio
+                );
 
                 if(res) {
                     // errors occurred

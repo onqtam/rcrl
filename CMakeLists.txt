@@ -23,11 +23,6 @@ set(plugin_file ${PROJECT_BINARY_DIR}/plugin.cpp)
 # touch the file so it exists
 file(WRITE ${plugin_file} "")
 
-set(additional_flags "")
-if(MSVC AND NOT ${CMAKE_GENERATOR} STREQUAL "Ninja" AND NOT CMAKE_GENERATOR STREQUAL "NMake Makefiles")
-    set(additional_flags "--config $(Configuration) -- /verbosity:quiet /consoleloggerparameters:PerformanceSummary")
-endif()
-
 ####################################################################################################
 # the main executable
 ####################################################################################################
@@ -35,12 +30,14 @@ endif()
 add_executable(host_app src/main.cpp src/third_party/imgui/examples/opengl2_example/imgui_impl_glfw.cpp)
 # enable exports so the plugin can link to the executable
 set_target_properties(host_app PROPERTIES ENABLE_EXPORTS ON)
+target_include_directories(host_app PUBLIC src)
 # defines needed for easier RCRL integration
 target_compile_definitions(host_app PRIVATE "CRCL_PLUGIN_FILE=\"${plugin_file}\"")
 target_compile_definitions(host_app PRIVATE "CRCL_BUILD_FOLDER=\"${PROJECT_BINARY_DIR}\"")
-target_compile_definitions(host_app PRIVATE "CRCL_ADDITIONAL_FLAGS=\"${additional_flags}\"")
 target_compile_definitions(host_app PRIVATE "CRCL_HOST_APP")
-target_include_directories(host_app PUBLIC src)
+if(${CMAKE_GENERATOR} MATCHES "Visual Studio" OR ${CMAKE_GENERATOR} MATCHES "Xcode")
+    target_compile_definitions(host_app PRIVATE "CRCL_CONFIG=\"$<CONFIG>\"")
+endif()
 
 ####################################################################################################
 # the plugin that will be used for RCRL
@@ -56,6 +53,7 @@ set_target_properties(plugin PROPERTIES PREFIX "")
 if(MSVC)
     # we don't want .pdb files for the plugin because when we are within Visual Studio and debugging the application it locks
     # the .pdb for the original .dll and subsequent compiles fail even though we have loaded copies of the original .dll
+    # can also use /PDBALTPATH - https://blog.molecular-matters.com/2014/05/10/using-runtime-compiled-c-code-as-a-scripting-language-under-the-hood/
     set_target_properties(plugin PROPERTIES LINK_FLAGS /DEBUG:NONE)
 endif()
 
