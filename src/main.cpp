@@ -28,7 +28,6 @@ typedef HMODULE DynamicLib;
 #define CopyDynlib(src, dst) CopyFile(src, dst, false)
 
 #define PLUGIN_EXTENSION ".dll"
-#define FILESYSTEM_SLASH "\\"
 
 #else // _WIN32
 
@@ -45,7 +44,6 @@ typedef void* DynamicLib;
 #define CopyDynlib(src, dst) (!system((string("cp ") + RCRL_BIN_FOLDER + src + " " + RCRL_BIN_FOLDER + dst).c_str()))
 
 #define PLUGIN_EXTENSION ".so"
-#define FILESYSTEM_SLASH "/"
 
 #endif // _WIN32
 
