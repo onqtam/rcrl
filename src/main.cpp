@@ -42,7 +42,7 @@ typedef void* DynamicLib;
 #define LoadDynlib(lib) dlopen(lib, RTLD_NOW)
 #define CloseDynlib dlclose
 #define GetProc dlsym
-#define CopyDynlib(src, dst) (!system((string("cp ") + CRCL_BIN_FOLDER + src + " " + CRCL_BIN_FOLDER + dst).c_str()))
+#define CopyDynlib(src, dst) (!system((string("cp ") + RCRL_BIN_FOLDER + src + " " + RCRL_BIN_FOLDER + dst).c_str()))
 
 #define PLUGIN_EXTENSION ".so"
 #define FILESYSTEM_SLASH "/"
@@ -56,20 +56,19 @@ typedef void* DynamicLib;
 void f() { cout << "forced print!" << endl; }
 
 void reconstruct_plugin_source_file() {
-    ofstream myfile(CRCL_PLUGIN_FILE);
+    ofstream myfile(RCRL_PLUGIN_FILE);
     myfile << "#include \"host_app.h\"\n";
     myfile.close();
 }
 
 // my own callback - need to add the carriage return symbols to make ImGuiColorTextEdit work when 'enter' is pressed
-void RCRL_ImGui_ImplGlfwGL2_KeyCallback(GLFWwindow* w, int key, int scancode, int action, int mods)
-{
-	// call the callback from the imgui/glfw integration
-	ImGui_ImplGlfwGL2_KeyCallback(w, key, scancode, action, mods);
+void RCRL_ImGui_ImplGlfwGL2_KeyCallback(GLFWwindow* w, int key, int scancode, int action, int mods) {
+    // call the callback from the imgui/glfw integration
+    ImGui_ImplGlfwGL2_KeyCallback(w, key, scancode, action, mods);
 
-	ImGuiIO& io = ImGui::GetIO();
-	if (key == GLFW_KEY_ENTER && (action == GLFW_PRESS || action == GLFW_REPEAT))
-		io.AddInputCharacter((unsigned short)'\r');
+    ImGuiIO& io = ImGui::GetIO();
+    if(key == GLFW_KEY_ENTER && (action == GLFW_PRESS || action == GLFW_REPEAT))
+        io.AddInputCharacter((unsigned short)'\r');
 }
 
 int main() {
@@ -84,8 +83,8 @@ int main() {
     // Setup ImGui binding
     ImGui_ImplGlfwGL2_Init(window, true);
 
-	// overwrite with my own callback
-	glfwSetKeyCallback(window, RCRL_ImGui_ImplGlfwGL2_KeyCallback);
+    // overwrite with my own callback
+    glfwSetKeyCallback(window, RCRL_ImGui_ImplGlfwGL2_KeyCallback);
 
     // init the plugin file
     reconstruct_plugin_source_file();
@@ -94,12 +93,12 @@ int main() {
 
     // an editor instance - for the already submitted code
     TextEditor history;
-	history.SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus());
-	history.SetReadOnly(true);
+    history.SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus());
+    history.SetReadOnly(true);
 
-	// an editor instance - for the core being currently written
-	TextEditor editor;
-	editor.SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus());
+    // an editor instance - for the core being currently written
+    TextEditor editor;
+    editor.SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus());
 
     string statuses;
 
@@ -119,7 +118,7 @@ int main() {
         if(ImGui::Begin("console", nullptr, flags)) {
             const auto text_field_height = ImGui::GetTextLineHeight() * 20;
             ImGui::BeginChild("history code", ImVec2(700, text_field_height));
-			history.Render("History");
+            history.Render("History");
             ImGui::EndChild();
             ImGui::SameLine();
             ImGui::BeginChild("compiler errors", ImVec2(0, text_field_height));
@@ -127,28 +126,29 @@ int main() {
                                       ImGuiInputTextFlags_ReadOnly);
             ImGui::EndChild();
 
-			ImGui::BeginChild("source code", ImVec2(-1.f, text_field_height));
-			editor.Render("Code");
-			ImGui::EndChild();
+            ImGui::BeginChild("source code", ImVec2(-1.f, text_field_height));
+            editor.Render("Code");
+            ImGui::EndChild();
 
-			ImGuiIO& io = ImGui::GetIO();
-			if((io.KeysDown[GLFW_KEY_ENTER] && io.KeyCtrl) && (editor.GetTotalLines() > 1 || editor.GetText().size() > 1)) {
-				auto code = editor.GetText();
+            ImGuiIO& io = ImGui::GetIO();
+            if((io.KeysDown[GLFW_KEY_ENTER] && io.KeyCtrl) &&
+               (editor.GetTotalLines() > 1 || editor.GetText().size() > 1)) {
+                auto code = editor.GetText();
 
-				history.SetText(history.GetText() + code);
+                history.SetText(history.GetText() + code);
                 history.SetCursorPosition({history.GetTotalLines(), 1});
 
                 // append to file
-                ofstream myfile(CRCL_PLUGIN_FILE, ios::out | ios::app);
+                ofstream myfile(RCRL_PLUGIN_FILE, ios::out | ios::app);
                 myfile << code << endl;
                 myfile.close();
 
                 // rebuild the plugin
-                int res = system("cmake --build " CRCL_BUILD_FOLDER " --target plugin"
-#ifdef CRCL_CONFIG
-                                 " --config " CRCL_CONFIG
+                int res = system("cmake --build " RCRL_BUILD_FOLDER " --target plugin"
+#ifdef RCRL_CONFIG
+                                 " --config " RCRL_CONFIG
 #endif // multi config IDE
-#if defined(CRCL_CONFIG) && defined(_MSC_VER)
+#if defined(RCRL_CONFIG) && defined(_MSC_VER)
                                  " -- /verbosity:quiet /consoleloggerparameters:PerformanceSummary"
 #endif // Visual Studio
                 );
@@ -165,8 +165,8 @@ int main() {
 
                     // copy the plugin
                     auto plugin_name =
-                            string(CRCL_BIN_FOLDER) + "plugin_" + to_string(plugins.size()) + PLUGIN_EXTENSION;
-                    const auto copy_res = CopyDynlib((string(CRCL_BIN_FOLDER) + "plugin" PLUGIN_EXTENSION).c_str(),
+                            string(RCRL_BIN_FOLDER) + "plugin_" + to_string(plugins.size()) + PLUGIN_EXTENSION;
+                    const auto copy_res = CopyDynlib((string(RCRL_BIN_FOLDER) + "plugin" PLUGIN_EXTENSION).c_str(),
                                                      plugin_name.c_str());
 
                     assert(copy_res);
@@ -215,7 +215,7 @@ int main() {
         CloseDynlib(plugin.second);
 
     if(plugins.size())
-        system((string("del ") + CRCL_BIN_FOLDER + "plugin_*" PLUGIN_EXTENSION " /Q").c_str());
+        system((string("del ") + RCRL_BIN_FOLDER + "plugin_*" PLUGIN_EXTENSION " /Q").c_str());
     plugins.clear();
 
     return 0;

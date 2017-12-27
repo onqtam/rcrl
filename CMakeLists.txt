@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0.0)
 
-project(rcrl)
+project(RCRL)
 
 ####################################################################################################
 # global flags and directories setup
@@ -32,12 +32,12 @@ add_executable(host_app src/main.cpp src/third_party/imgui/examples/opengl2_exam
 set_target_properties(host_app PROPERTIES ENABLE_EXPORTS ON)
 target_include_directories(host_app PUBLIC src)
 # defines needed for easier RCRL integration
-target_compile_definitions(host_app PRIVATE "CRCL_PLUGIN_FILE=\"${plugin_file}\"")
-target_compile_definitions(host_app PRIVATE "CRCL_BUILD_FOLDER=\"${PROJECT_BINARY_DIR}\"")
-target_compile_definitions(host_app PRIVATE "CRCL_BIN_FOLDER=\"$<TARGET_FILE_DIR:host_app>/\"")
-target_compile_definitions(host_app PRIVATE "CRCL_HOST_APP")
+target_compile_definitions(host_app PRIVATE "RCRL_PLUGIN_FILE=\"${plugin_file}\"")
+target_compile_definitions(host_app PRIVATE "RCRL_BUILD_FOLDER=\"${PROJECT_BINARY_DIR}\"")
+target_compile_definitions(host_app PRIVATE "RCRL_BIN_FOLDER=\"$<TARGET_FILE_DIR:host_app>/\"")
+target_compile_definitions(host_app PRIVATE "RCRL_HOST_APP")
 if(${CMAKE_GENERATOR} MATCHES "Visual Studio" OR ${CMAKE_GENERATOR} MATCHES "Xcode")
-    target_compile_definitions(host_app PRIVATE "CRCL_CONFIG=\"$<CONFIG>\"")
+    target_compile_definitions(host_app PRIVATE "RCRL_CONFIG=\"$<CONFIG>\"")
 endif()
 
 ####################################################################################################
