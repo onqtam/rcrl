@@ -1,5 +1,6 @@
 #include "host_app.h"
 #include "TextEditor.h"
+#include "process.hpp"
 
 #include <chrono>
 #include <thread>
@@ -41,8 +42,7 @@ typedef void* DynamicLib;
 #define LoadDynlib(lib) dlopen(lib, RTLD_NOW)
 #define CloseDynlib dlclose
 #define GetProc dlsym
-#define CopyDynlib(src, dst)                                                                                           \
-    (!system((string("cp ") + get_path_to_exe() + src + " " + get_path_to_exe() + dst).c_str()))
+#define CopyDynlib(src, dst) (!system((string("cp ") + CRCL_BIN_FOLDER + src + " " + CRCL_BIN_FOLDER + dst).c_str()))
 
 #define PLUGIN_EXTENSION ".so"
 #define FILESYSTEM_SLASH "/"
@@ -52,23 +52,6 @@ typedef void* DynamicLib;
 #include <imgui.h>
 #include <examples/opengl2_example/imgui_impl_glfw.h>
 #include <GLFW/glfw3.h>
-
-string get_path_to_exe() {
-#ifdef _WIN32
-    TCHAR path[MAX_PATH];
-    GetModuleFileName(nullptr, path, MAX_PATH);
-#else  // _WIN32
-    char arg1[20];
-    char path[PATH_MAX + 1] = {0};
-    sprintf(arg1, "/proc/%d/exe", getpid());
-    auto dummy = readlink(arg1, path, 1024);
-    ((void)dummy); // to use it... because the result is annotated for static analysis
-#endif // _WIN32
-    string spath = path;
-    size_t pos   = spath.find_last_of("\\/");
-    assert(pos != std::string::npos);
-    return spath.substr(0, pos) + FILESYSTEM_SLASH;
-}
 
 void f() { cout << "forced print!" << endl; }
 
@@ -176,14 +159,15 @@ int main() {
                 } else {
                     statuses += "SUCCESS\n";
 
-					// clear the editor
-					editor.SetText("\r"); // an empty string "" breaks it for some reason...
-					editor.SetCursorPosition({ 0, 0 });
+                    // clear the editor
+                    editor.SetText("\r"); // an empty string "" breaks it for some reason...
+                    editor.SetCursorPosition({0, 0});
 
                     // copy the plugin
-                    auto plugin_name = get_path_to_exe() + "plugin_" + to_string(plugins.size()) + PLUGIN_EXTENSION;
-                    const auto copy_res =
-                            CopyDynlib((get_path_to_exe() + "plugin" PLUGIN_EXTENSION).c_str(), plugin_name.c_str());
+                    auto plugin_name =
+                            string(CRCL_BIN_FOLDER) + "plugin_" + to_string(plugins.size()) + PLUGIN_EXTENSION;
+                    const auto copy_res = CopyDynlib((string(CRCL_BIN_FOLDER) + "plugin" PLUGIN_EXTENSION).c_str(),
+                                                     plugin_name.c_str());
 
                     assert(copy_res);
 
@@ -231,7 +215,7 @@ int main() {
         CloseDynlib(plugin.second);
 
     if(plugins.size())
-        system((string("del ") + get_path_to_exe() + "plugin_*" PLUGIN_EXTENSION " /Q").c_str());
+        system((string("del ") + CRCL_BIN_FOLDER + "plugin_*" PLUGIN_EXTENSION " /Q").c_str());
     plugins.clear();
 
     return 0;

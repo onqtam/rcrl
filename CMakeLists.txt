@@ -34,6 +34,7 @@ target_include_directories(host_app PUBLIC src)
 # defines needed for easier RCRL integration
 target_compile_definitions(host_app PRIVATE "CRCL_PLUGIN_FILE=\"${plugin_file}\"")
 target_compile_definitions(host_app PRIVATE "CRCL_BUILD_FOLDER=\"${PROJECT_BINARY_DIR}\"")
+target_compile_definitions(host_app PRIVATE "CRCL_BIN_FOLDER=\"$<TARGET_FILE_DIR:host_app>/\"")
 target_compile_definitions(host_app PRIVATE "CRCL_HOST_APP")
 if(${CMAKE_GENERATOR} MATCHES "Visual Studio" OR ${CMAKE_GENERATOR} MATCHES "Xcode")
     target_compile_definitions(host_app PRIVATE "CRCL_CONFIG=\"$<CONFIG>\"")

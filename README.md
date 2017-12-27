@@ -17,7 +17,7 @@ TODO:
 - redirect the output temporarily while loading the lib?
 - factor it in a few easy-to-use functions
 
-- make it work under linux
+- make it work under linux (currently only compiles)
 - add a PCH
 - read up on 'lexer programming'
 - http://cppnow.org/2018-conference/announcements/2017/12/03/call-for-submission.html
