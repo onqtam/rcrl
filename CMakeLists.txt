@@ -84,13 +84,17 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(GLFW_INSTALL        OFF CACHE BOOL "" FORCE)
 add_subdirectory(src/third_party/glfw)
 
+# tiny-process-library
+add_subdirectory(src/third_party/tiny-process-library)
+
 # folders for the third party libs
 set_target_properties(glfw PROPERTIES FOLDER "third_party")
 set_target_properties(imgui PROPERTIES FOLDER "third_party")
 set_target_properties(ImGuiColorTextEdit PROPERTIES FOLDER "third_party")
+set_target_properties(tiny-process-library PROPERTIES FOLDER "third_party")
 
 # link host app to third party libs
-target_link_libraries(host_app PRIVATE imgui glfw ImGuiColorTextEdit)
+target_link_libraries(host_app PRIVATE imgui glfw ImGuiColorTextEdit tiny-process-library)
 if(UNIX)
     target_link_libraries(host_app PRIVATE dl GL)
 else()
