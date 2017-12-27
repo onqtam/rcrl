@@ -98,7 +98,8 @@ int main() {
     TextEditor editor;
     editor.SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus());
 
-    string statuses;
+    unique_ptr<TinyProcessLib::Process> compiler_process;
+    string                              compiler_output;
 
     // Main loop
     while(!glfwWindowShouldClose(window)) {
@@ -119,9 +120,9 @@ int main() {
             history.Render("History");
             ImGui::EndChild();
             ImGui::SameLine();
-            ImGui::BeginChild("compiler errors", ImVec2(0, text_field_height));
-            ImGui::InputTextMultiline("##errors", statuses.data(), statuses.size(), ImVec2(-1.0f, text_field_height),
-                                      ImGuiInputTextFlags_ReadOnly);
+            ImGui::BeginChild("compiler output", ImVec2(0, text_field_height));
+            ImGui::InputTextMultiline("##compiler_output", compiler_output.data(), compiler_output.size(),
+                                      ImVec2(-1.0f, text_field_height), ImGuiInputTextFlags_ReadOnly);
             ImGui::EndChild();
 
             ImGui::BeginChild("source code", ImVec2(-1.f, text_field_height));
@@ -130,7 +131,7 @@ int main() {
 
             ImGuiIO& io = ImGui::GetIO();
             if((io.KeysDown[GLFW_KEY_ENTER] && io.KeyCtrl) &&
-               (editor.GetTotalLines() > 1 || editor.GetText().size() > 1)) {
+               (editor.GetTotalLines() > 1 || editor.GetText().size() > 1) && !compiler_process) {
                 auto code = editor.GetText();
 
                 history.SetText(history.GetText() + code);
@@ -141,44 +142,54 @@ int main() {
                 myfile << code << endl;
                 myfile.close();
 
-                // rebuild the plugin
-                int res = system("cmake --build " RCRL_BUILD_FOLDER " --target plugin"
+                // make the editor code untouchable while compiling
+                editor.SetReadOnly(true);
+
+                compiler_output.clear();
+                auto output_catcher = [&](const char* bytes, size_t n) { compiler_output += string(bytes, n); };
+                compiler_process    = make_unique<TinyProcessLib::Process>(
+                        "cmake --build " RCRL_BUILD_FOLDER " --target plugin"
 #ifdef RCRL_CONFIG
-                                 " --config " RCRL_CONFIG
+                        " --config " RCRL_CONFIG
 #endif // multi config IDE
 #if defined(RCRL_CONFIG) && defined(_MSC_VER)
-                                 " -- /verbosity:quiet /consoleloggerparameters:PerformanceSummary"
+                        " -- /verbosity:quiet /consoleloggerparameters:PerformanceSummary"
 #endif // Visual Studio
-                );
-
-                if(res) {
-                    // errors occurred
-                    statuses += "ERRORED\n";
-                } else {
-                    statuses += "SUCCESS\n";
-
-                    // clear the editor
-                    editor.SetText("\r"); // an empty string "" breaks it for some reason...
-                    editor.SetCursorPosition({0, 0});
-
-                    // copy the plugin
-                    auto plugin_name =
-                            string(RCRL_BIN_FOLDER) + "plugin_" + to_string(plugins.size()) + PLUGIN_EXTENSION;
-                    const auto copy_res = CopyDynlib((string(RCRL_BIN_FOLDER) + "plugin" PLUGIN_EXTENSION).c_str(),
-                                                     plugin_name.c_str());
-
-                    assert(copy_res);
-
-                    // load the plugin
-                    auto plugin = LoadDynlib(plugin_name.c_str());
-                    assert(plugin);
-
-                    // add the plugin to the list of loaded ones - for later unloading
-                    plugins.push_back({plugin_name, plugin});
-                }
+                        ,
+                        "", output_catcher, output_catcher);
             }
         }
         ImGui::End();
+
+        if(int exitcode = 0; compiler_process && compiler_process->try_get_exit_status(exitcode)) {
+            // we can edit the code again
+            editor.SetReadOnly(false);
+
+            compiler_process.reset();
+
+            if(exitcode) {
+                // errors occurred
+                editor.SetCursorPosition({editor.GetTotalLines(), 1});
+            } else {
+                // clear the editor
+                editor.SetText("\r"); // an empty string "" breaks it for some reason...
+                editor.SetCursorPosition({0, 0});
+
+                // copy the plugin
+                auto plugin_name = string(RCRL_BIN_FOLDER) + "plugin_" + to_string(plugins.size()) + PLUGIN_EXTENSION;
+                const auto copy_res =
+                        CopyDynlib((string(RCRL_BIN_FOLDER) + "plugin" PLUGIN_EXTENSION).c_str(), plugin_name.c_str());
+
+                assert(copy_res);
+
+                // load the plugin
+                auto plugin = LoadDynlib(plugin_name.c_str());
+                assert(plugin);
+
+                // add the plugin to the list of loaded ones - for later unloading
+                plugins.push_back({plugin_name, plugin});
+            }
+        }
 
         //ImGui::ShowDemoWindow();
 

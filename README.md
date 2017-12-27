@@ -10,9 +10,8 @@ TODO:
 
 - get the 3 sections working
 - implement cleanup
-- use a process library to get the output from the compiler
 - make the execution non-blocking
-    - synchronization
+    - synchronization (sort-of done - should not immediately post to history)
     - objects spinning in the background
 - redirect the output temporarily while loading the lib?
 - factor it in a few easy-to-use functions
