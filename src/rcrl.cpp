@@ -64,6 +64,7 @@ void cleanup_plugins() {
     // call the deleters in reverse order
     for(auto it = rcrl_deleters.rbegin(); it != rcrl_deleters.rend(); ++it)
         it->second(it->first);
+	rcrl_deleters.clear();
 
     // close the plugins in reverse order
     for(auto it = g_plugins.rbegin(); it != g_plugins.rend(); ++it)
@@ -112,7 +113,7 @@ void submit_code(const string& code, Mode mode) {
 		current_section += "    auto& address = rcrl_persistence[\"" + name + "\"];\n";
 		current_section += "    if (address == nullptr) {\n";
 		current_section += "        address = new " + type + "();\n";
-		current_section += "        rcrl_deleters.push_back({ " + name + "_ptr, rcrl_deleter<" + type + ">});\n";
+		current_section += "        rcrl_deleters.push_back({address, rcrl_deleter<" + type + ">});\n";
 		current_section += "    }\n";
 		current_section += "    return static_cast<" + type + "*>(address);\n";
 		current_section += "}();\n";
