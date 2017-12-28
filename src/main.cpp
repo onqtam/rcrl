@@ -106,13 +106,19 @@ int main() {
             ImGui::RadioButton("global", (int*)&mode, rcrl::GLOBAL);
             ImGui::RadioButton("vars", (int*)&mode, rcrl::VARS);
             ImGui::RadioButton("once", (int*)&mode, rcrl::ONCE);
+            auto compile = ImGui::Button("Compile and run");
+            if(ImGui::Button("Cleanup") && !rcrl::is_compiling()) {
+                rcrl::cleanup_plugins();
+				history.SetText("\r");
+            }
             //ImGui::Text("Program output");
             //ImGui::InputTextMultiline("##program_output", "", 0, ImVec2(-1.f, -1.f), ImGuiInputTextFlags_ReadOnly);
             ImGui::EndChild();
 
             // if the user has submitted code
             ImGuiIO& io = ImGui::GetIO();
-            if(!rcrl::is_compiling() && (io.KeysDown[GLFW_KEY_ENTER] && io.KeyCtrl) && editor.GetText().size() > 1) {
+            compile |= (io.KeysDown[GLFW_KEY_ENTER] && io.KeyCtrl);
+            if(compile && !rcrl::is_compiling() && editor.GetText().size() > 1) {
                 // clear compiler output
                 compiler_output.clear();
 

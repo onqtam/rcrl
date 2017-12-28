@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <fstream>
+#include <algorithm>
 
 #include <third_party/tiny-process-library/process.hpp>
 
@@ -32,26 +33,28 @@ using namespace std;
 
 namespace rcrl
 {
-vector<pair<string, RCRL_Dynlib>> g_plugins;
+vector<pair<string, RCRL_Dynlib>>   g_plugins;
 unique_ptr<TinyProcessLib::Process> compiler_process;
 string                              compiler_output;
 mutex                               compiler_output_mut;
-void output_appender(const char* bytes, size_t n) {
-	lock_guard<mutex> lock(compiler_output_mut);
-	compiler_output += string(bytes, n);
-}
 
-void compiler_output_getter(const char* bytes, size_t n) {
-	lock_guard<mutex> a(compiler_output_mut);
-	compiler_output += string(bytes, n);
+void output_appender(const char* bytes, size_t n) {
+    lock_guard<mutex> lock(compiler_output_mut);
+    compiler_output += string(bytes, n);
 }
 
 void cleanup_plugins() {
     for(auto it = g_plugins.rbegin(); it != g_plugins.rend(); ++it)
         RCRL_CloseDynlib(it->second);
 
+    string bin_folder(RCRL_BIN_FOLDER);
+#ifdef _WIN32
+	// replace forward slash with windows style slash
+    std::replace(bin_folder.begin(), bin_folder.end(), '/', '\\');
+#endif // _WIN32
+
     if(g_plugins.size())
-        system((string("del ") + RCRL_BIN_FOLDER + "plugin_*" RCRL_EXTENSION " /Q").c_str());
+        system((string("del ") + bin_folder + "plugin_*" RCRL_EXTENSION " /Q").c_str());
     g_plugins.clear();
 }
 
@@ -81,8 +84,8 @@ void submit_code(const string& code, Mode mode) {
 
 std::string get_new_compiler_output() {
     lock_guard<mutex> lock(compiler_output_mut);
-	auto temp = compiler_output;
-	compiler_output.clear();
+    auto              temp = compiler_output;
+    compiler_output.clear();
     return temp;
 }
 
