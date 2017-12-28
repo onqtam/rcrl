@@ -104,8 +104,10 @@ set_target_properties(tiny-process-library PROPERTIES FOLDER "third_party")
 
 # link host app to third party libs
 target_link_libraries(host_app PRIVATE imgui glfw ImGuiColorTextEdit tiny-process-library)
-if(UNIX)
-    target_link_libraries(host_app PRIVATE dl GL)
+if(APPLE)
+    target_link_libraries(host_app PRIVATE "-framework OpenGL")
+elseif(UNIX)
+    target_link_libraries(host_app PRIVATE dl opengl)
 else()
     target_link_libraries(host_app PRIVATE opengl32)
 endif()
