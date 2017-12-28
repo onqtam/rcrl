@@ -33,15 +33,17 @@ typedef void* RCRL_Dynlib;
 
 using namespace std;
 
-vector<pair<string, RCRL_Dynlib>> plugins;
+// globals
+bool                              g_rcrl_console_visible = true;
+vector<pair<string, RCRL_Dynlib>> g_plugins;
 
 void cleanup_plugins() {
-    for(auto it = plugins.rbegin(); it != plugins.rend(); ++it)
+    for(auto it = g_plugins.rbegin(); it != g_plugins.rend(); ++it)
         RCRL_CloseDynlib(it->second);
 
-    if(plugins.size())
+    if(g_plugins.size())
         system((string("del ") + RCRL_BIN_FOLDER + "plugin_*" RCRL_EXTENSION " /Q").c_str());
-    plugins.clear();
+    g_plugins.clear();
 }
 
 void reconstruct_plugin_source_file() {
@@ -58,6 +60,11 @@ void RCRL_ImGui_ImplGlfwGL2_KeyCallback(GLFWwindow* w, int key, int scancode, in
     ImGuiIO& io = ImGui::GetIO();
     if(key == GLFW_KEY_ENTER && (action == GLFW_PRESS || action == GLFW_REPEAT))
         io.AddInputCharacter((unsigned short)'\r');
+
+    // this should be commented until this is fixed: https://github.com/BalazsJako/ImGuiColorTextEdit/issues/8
+    //if(!io.WantCaptureKeyboard && !io.WantTextInput && key == GLFW_KEY_GRAVE_ACCENT &&
+    //   (action == GLFW_PRESS || action == GLFW_REPEAT))
+    //    g_rcrl_console_visible = !g_rcrl_console_visible;
 }
 
 int main() {
@@ -70,6 +77,10 @@ int main() {
 
     // Setup ImGui binding
     ImGui_ImplGlfwGL2_Init(window, true);
+
+    // remove rounding of the console window
+    ImGuiStyle& style    = ImGui::GetStyle();
+    style.WindowRounding = 0.f;
 
     // overwrite with my own callback
     glfwSetKeyCallback(window, RCRL_ImGui_ImplGlfwGL2_KeyCallback);
@@ -103,25 +114,33 @@ int main() {
 
         auto flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
 
+        //if(g_rcrl_console_visible) {
         if(ImGui::Begin("console", nullptr, flags)) {
-            const auto text_field_height = ImGui::GetTextLineHeight() * 20;
+            const auto text_field_height = ImGui::GetTextLineHeight() * 15;
             ImGui::BeginChild("history code", ImVec2(display_w * 0.5f, text_field_height));
+
+            auto hcpos = editor.GetCursorPosition();
+            ImGui::Text("Executed code: %3d/%-3d %3d lines", hcpos.mLine + 1, hcpos.mColumn + 1, editor.GetTotalLines());
             history.Render("History");
             ImGui::EndChild();
             ImGui::SameLine();
             ImGui::BeginChild("compiler output", ImVec2(0, text_field_height));
+            ImGui::Text("Compiler output");
             ImGui::InputTextMultiline("##compiler_output", compiler_output.data(), compiler_output.size(),
-                                      ImVec2(-1.0f, text_field_height), ImGuiInputTextFlags_ReadOnly);
+                                      ImVec2(-1.f, -1.f), ImGuiInputTextFlags_ReadOnly);
             ImGui::EndChild();
 
             ImGui::BeginChild("source code", ImVec2(display_w * 0.5f, text_field_height));
+            auto ecpos = editor.GetCursorPosition();
+            ImGui::Text("RCRL Console: %3d/%-3d %3d lines | %s", ecpos.mLine + 1, ecpos.mColumn + 1, editor.GetTotalLines(),
+                        editor.CanUndo() ? "*" : " ");
             editor.Render("Code");
             ImGui::EndChild();
-            ImGui::SameLine();
-            ImGui::BeginChild("program output", ImVec2(0, text_field_height));
-            ImGui::InputTextMultiline("##program_output", compiler_output.data(), compiler_output.size(),
-                                      ImVec2(-1.0f, text_field_height), ImGuiInputTextFlags_ReadOnly);
-            ImGui::EndChild();
+            //ImGui::SameLine();
+            //ImGui::BeginChild("program output", ImVec2(0, text_field_height));
+            //ImGui::Text("Program output");
+            //ImGui::InputTextMultiline("##program_output", "", 0, ImVec2(-1.f, -1.f), ImGuiInputTextFlags_ReadOnly);
+            //ImGui::EndChild();
 
             ImGuiIO& io = ImGui::GetIO();
             if((io.KeysDown[GLFW_KEY_ENTER] && io.KeyCtrl) && (editor.GetTotalLines() > 1 || editor.GetText().size() > 1) &&
@@ -137,7 +156,7 @@ int main() {
                 editor.SetReadOnly(true);
 
                 compiler_output.clear();
-                compiler_process    = make_unique<TinyProcessLib::Process>(
+                compiler_process = make_unique<TinyProcessLib::Process>(
                         "cmake --build " RCRL_BUILD_FOLDER " --target plugin"
 #ifdef RCRL_CONFIG
                         " --config " RCRL_CONFIG
@@ -150,16 +169,19 @@ int main() {
             }
         }
         ImGui::End();
+        //}
 
+        // if there is a spawned compiler process and it has just finished
         if(int exitcode = 0; compiler_process && compiler_process->try_get_exit_status(exitcode)) {
             // we can edit the code again
             editor.SetReadOnly(false);
 
+            // remove the compiler process
             compiler_process.reset();
 
             if(exitcode) {
                 // errors occurred
-                editor.SetCursorPosition({editor.GetTotalLines(), 1});
+                editor.SetCursorPosition({editor.GetTotalLines(), 0});
             } else {
                 // append to the history
                 history.SetText(history.GetText() + editor.GetText());
@@ -169,7 +191,7 @@ int main() {
                 editor.SetCursorPosition({0, 0});
 
                 // copy the plugin
-                auto       name_copied = string(RCRL_BIN_FOLDER) + "plugin_" + to_string(plugins.size()) + RCRL_EXTENSION;
+                auto       name_copied = string(RCRL_BIN_FOLDER) + "plugin_" + to_string(g_plugins.size()) + RCRL_EXTENSION;
                 const auto copy_res =
                         RCRL_CopyDynlib((string(RCRL_BIN_FOLDER) + "plugin" RCRL_EXTENSION).c_str(), name_copied.c_str());
                 assert(copy_res);
@@ -179,18 +201,18 @@ int main() {
                 assert(plugin);
 
                 // add the plugin to the list of loaded ones - for later unloading
-                plugins.push_back({name_copied, plugin});
+                g_plugins.push_back({name_copied, plugin});
             }
         }
 
-        //ImGui::ShowDemoWindow();
+        ImGui::ShowDemoWindow();
 
         // Rendering
         glViewport(0, 0, display_w, display_h);
         glClearColor(0.45f, 0.55f, 0.60f, 1.00f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-		draw();
+        draw();
 
         ImGui::Render();
         glfwSwapBuffers(window);
