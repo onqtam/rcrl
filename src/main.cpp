@@ -1,57 +1,48 @@
-#include "host_app.h"
-#include "TextEditor.h"
-#include "process.hpp"
-
-#include <chrono>
-#include <thread>
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <vector>
-#include <cstdlib>
-#include <cassert>
-
-using namespace std;
-
 #ifdef _WIN32
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include <tchar.h>
-#include <strsafe.h>
 
-typedef HMODULE DynamicLib;
+typedef HMODULE RCRL_Dynlib;
 
-#define LoadDynlib(lib) LoadLibrary(lib)
-#define CloseDynlib FreeLibrary
-#define GetProc GetProcAddress
-#define CopyDynlib(src, dst) CopyFile(src, dst, false)
-
-#define PLUGIN_EXTENSION ".dll"
+#define RDRL_LoadDynlib(lib) LoadLibrary(lib)
+#define RCRL_CloseDynlib FreeLibrary
+#define RCRL_CopyDynlib(src, dst) CopyFile(src, dst, false)
 
 #else // _WIN32
 
-#include <sys/types.h>
-#include <unistd.h>
 #include <dlfcn.h>
-#include <dirent.h>
 
-typedef void* DynamicLib;
+typedef void* RCRL_Dynlib;
 
-#define LoadDynlib(lib) dlopen(lib, RTLD_NOW)
-#define CloseDynlib dlclose
-#define GetProc dlsym
-#define CopyDynlib(src, dst) (!system((string("cp ") + RCRL_BIN_FOLDER + src + " " + RCRL_BIN_FOLDER + dst).c_str()))
-
-#define PLUGIN_EXTENSION ".so"
+#define RDRL_LoadDynlib(lib) dlopen(lib, RTLD_NOW)
+#define RCRL_CloseDynlib dlclose
+#define RCRL_CopyDynlib(src, dst) (!system((string("cp ") + RCRL_BIN_FOLDER + src + " " + RCRL_BIN_FOLDER + dst).c_str()))
 
 #endif // _WIN32
 
-#include <imgui.h>
-#include <examples/opengl2_example/imgui_impl_glfw.h>
 #include <GLFW/glfw3.h>
+#include <third_party/tiny-process-library/process.hpp>
+#include <third_party/ImGuiColorTextEdit/TextEditor.h>
+#include <third_party/imgui/examples/opengl2_example/imgui_impl_glfw.h>
 
-void f() { cout << "forced print!" << endl; }
+#include <iostream>
+#include <fstream>
+
+#include "host_app.h"
+
+using namespace std;
+
+vector<pair<string, RCRL_Dynlib>> plugins;
+
+void cleanup_plugins() {
+    for(auto it = plugins.rbegin(); it != plugins.rend(); ++it)
+        RCRL_CloseDynlib(it->second);
+
+    if(plugins.size())
+        system((string("del ") + RCRL_BIN_FOLDER + "plugin_*" RCRL_EXTENSION " /Q").c_str());
+    plugins.clear();
+}
 
 void reconstruct_plugin_source_file() {
     ofstream myfile(RCRL_PLUGIN_FILE);
@@ -72,10 +63,9 @@ void RCRL_ImGui_ImplGlfwGL2_KeyCallback(GLFWwindow* w, int key, int scancode, in
 int main() {
     // Setup window
     glfwSetErrorCallback([](int error, const char* description) { cerr << error << " " << description << endl; });
-
     if(!glfwInit())
         return 1;
-    GLFWwindow* window = glfwCreateWindow(1366, 768, "Read-Compile-Run-Loop - REPL for C++", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(1024, 768, "Read-Compile-Run-Loop - REPL for C++", nullptr, nullptr);
     glfwMakeContextCurrent(window);
 
     // Setup ImGui binding
@@ -86,8 +76,6 @@ int main() {
 
     // init the plugin file
     reconstruct_plugin_source_file();
-
-    vector<pair<string, DynamicLib>> plugins;
 
     // an editor instance - for the already submitted code
     TextEditor history;
@@ -100,6 +88,7 @@ int main() {
 
     unique_ptr<TinyProcessLib::Process> compiler_process;
     string                              compiler_output;
+    auto output_appender = [&](const char* bytes, size_t n) { compiler_output += string(bytes, n); };
 
     // Main loop
     while(!glfwWindowShouldClose(window)) {
@@ -116,7 +105,7 @@ int main() {
 
         if(ImGui::Begin("console", nullptr, flags)) {
             const auto text_field_height = ImGui::GetTextLineHeight() * 20;
-            ImGui::BeginChild("history code", ImVec2(700, text_field_height));
+            ImGui::BeginChild("history code", ImVec2(display_w * 0.5f, text_field_height));
             history.Render("History");
             ImGui::EndChild();
             ImGui::SameLine();
@@ -125,28 +114,29 @@ int main() {
                                       ImVec2(-1.0f, text_field_height), ImGuiInputTextFlags_ReadOnly);
             ImGui::EndChild();
 
-            ImGui::BeginChild("source code", ImVec2(-1.f, text_field_height));
+            ImGui::BeginChild("source code", ImVec2(display_w * 0.5f, text_field_height));
             editor.Render("Code");
+            ImGui::EndChild();
+            ImGui::SameLine();
+            ImGui::BeginChild("program output", ImVec2(0, text_field_height));
+            ImGui::InputTextMultiline("##program_output", compiler_output.data(), compiler_output.size(),
+                                      ImVec2(-1.0f, text_field_height), ImGuiInputTextFlags_ReadOnly);
             ImGui::EndChild();
 
             ImGuiIO& io = ImGui::GetIO();
-            if((io.KeysDown[GLFW_KEY_ENTER] && io.KeyCtrl) &&
-               (editor.GetTotalLines() > 1 || editor.GetText().size() > 1) && !compiler_process) {
-                auto code = editor.GetText();
-
-                history.SetText(history.GetText() + code);
+            if((io.KeysDown[GLFW_KEY_ENTER] && io.KeyCtrl) && (editor.GetTotalLines() > 1 || editor.GetText().size() > 1) &&
+               !compiler_process) {
                 history.SetCursorPosition({history.GetTotalLines(), 1});
 
                 // append to file
                 ofstream myfile(RCRL_PLUGIN_FILE, ios::out | ios::app);
-                myfile << code << endl;
+                myfile << editor.GetText() << endl;
                 myfile.close();
 
                 // make the editor code untouchable while compiling
                 editor.SetReadOnly(true);
 
                 compiler_output.clear();
-                auto output_catcher = [&](const char* bytes, size_t n) { compiler_output += string(bytes, n); };
                 compiler_process    = make_unique<TinyProcessLib::Process>(
                         "cmake --build " RCRL_BUILD_FOLDER " --target plugin"
 #ifdef RCRL_CONFIG
@@ -156,7 +146,7 @@ int main() {
                         " -- /verbosity:quiet /consoleloggerparameters:PerformanceSummary"
 #endif // Visual Studio
                         ,
-                        "", output_catcher, output_catcher);
+                        "", output_appender, output_appender);
             }
         }
         ImGui::End();
@@ -171,23 +161,25 @@ int main() {
                 // errors occurred
                 editor.SetCursorPosition({editor.GetTotalLines(), 1});
             } else {
+                // append to the history
+                history.SetText(history.GetText() + editor.GetText());
+
                 // clear the editor
                 editor.SetText("\r"); // an empty string "" breaks it for some reason...
                 editor.SetCursorPosition({0, 0});
 
                 // copy the plugin
-                auto plugin_name = string(RCRL_BIN_FOLDER) + "plugin_" + to_string(plugins.size()) + PLUGIN_EXTENSION;
+                auto       name_copied = string(RCRL_BIN_FOLDER) + "plugin_" + to_string(plugins.size()) + RCRL_EXTENSION;
                 const auto copy_res =
-                        CopyDynlib((string(RCRL_BIN_FOLDER) + "plugin" PLUGIN_EXTENSION).c_str(), plugin_name.c_str());
-
+                        RCRL_CopyDynlib((string(RCRL_BIN_FOLDER) + "plugin" RCRL_EXTENSION).c_str(), name_copied.c_str());
                 assert(copy_res);
 
                 // load the plugin
-                auto plugin = LoadDynlib(plugin_name.c_str());
+                auto plugin = RDRL_LoadDynlib(name_copied.c_str());
                 assert(plugin);
 
                 // add the plugin to the list of loaded ones - for later unloading
-                plugins.push_back({plugin_name, plugin});
+                plugins.push_back({name_copied, plugin});
             }
         }
 
@@ -198,34 +190,16 @@ int main() {
         glClearColor(0.45f, 0.55f, 0.60f, 1.00f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // draw a triangle
-        {
-            glBegin(GL_TRIANGLES);
-
-            glColor3f(0.5, 0, 0);
-
-            glVertex2f(0.f, 1.f);
-            glVertex2f(-1.f, -1.f);
-            glVertex2f(1.f, -1.f);
-
-            glEnd();
-        }
+		draw();
 
         ImGui::Render();
         glfwSwapBuffers(window);
     }
 
     // Cleanup
+    cleanup_plugins();
     ImGui_ImplGlfwGL2_Shutdown();
     glfwTerminate();
-
-    // cleanup plugins
-    for(auto plugin : plugins)
-        CloseDynlib(plugin.second);
-
-    if(plugins.size())
-        system((string("del ") + RCRL_BIN_FOLDER + "plugin_*" PLUGIN_EXTENSION " /Q").c_str());
-    plugins.clear();
 
     return 0;
 }

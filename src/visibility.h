@@ -8,11 +8,11 @@
 #define SYMBOL_IMPORT
 #endif // _WIN32
 
-#ifdef CRCL_HOST_APP
+#ifdef RCRL_HOST_APP
 #define HOST_API SYMBOL_EXPORT
-#else // CRCL_HOST_APP
+#else // RCRL_HOST_APP
 #define HOST_API SYMBOL_IMPORT
-#endif // CRCL_HOST_APP
+#endif // RCRL_HOST_APP
 
 // can also use WINDOWS_EXPORT_ALL_SYMBOLS in CMake for Windows
 // instead of explicitly annotating each symbol in the host app

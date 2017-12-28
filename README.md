@@ -8,11 +8,9 @@ Read-Compile-Run-Loop - a REPL variant for C++ (much lighter than cling)
 
 TODO:
 
+- something interesting should happen in the background
 - get the 3 sections working
 - implement cleanup
-- make the execution non-blocking
-    - synchronization (sort-of done - should not immediately post to history)
-    - objects spinning in the background
 - redirect the output temporarily while loading the lib?
 - factor it in a few easy-to-use functions
 

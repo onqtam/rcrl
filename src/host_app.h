@@ -2,4 +2,5 @@
 
 #include "visibility.h"
 
-HOST_API void f();
+HOST_API void print();
+HOST_API void draw();

@@ -27,7 +27,15 @@ file(WRITE ${plugin_file} "")
 # the main executable
 ####################################################################################################
 
-add_executable(host_app src/main.cpp src/third_party/imgui/examples/opengl2_example/imgui_impl_glfw.cpp)
+add_executable(host_app
+    src/main.cpp
+    src/host_app.cpp
+    src/host_app.h
+    src/rcrl.cpp
+    src/rcrl.h
+    src/visibility.h
+    src/third_party/imgui/examples/opengl2_example/imgui_impl_glfw.cpp
+)
 # enable exports so the plugin can link to the executable
 set_target_properties(host_app PROPERTIES ENABLE_EXPORTS ON)
 target_include_directories(host_app PUBLIC src)
@@ -36,6 +44,7 @@ target_compile_definitions(host_app PRIVATE "RCRL_PLUGIN_FILE=\"${plugin_file}\"
 target_compile_definitions(host_app PRIVATE "RCRL_BUILD_FOLDER=\"${PROJECT_BINARY_DIR}\"")
 target_compile_definitions(host_app PRIVATE "RCRL_BIN_FOLDER=\"$<TARGET_FILE_DIR:host_app>/\"")
 target_compile_definitions(host_app PRIVATE "RCRL_HOST_APP")
+target_compile_definitions(host_app PRIVATE "RCRL_EXTENSION=\"${CMAKE_SHARED_LIBRARY_SUFFIX}\"")
 if(${CMAKE_GENERATOR} MATCHES "Visual Studio" OR ${CMAKE_GENERATOR} MATCHES "Xcode")
     target_compile_definitions(host_app PRIVATE "RCRL_CONFIG=\"$<CONFIG>\"")
 endif()
@@ -69,7 +78,6 @@ target_include_directories(imgui INTERFACE src/third_party/imgui)
 # ImGuiColorTextEdit
 add_library(ImGuiColorTextEdit STATIC src/third_party/ImGuiColorTextEdit/TextEditor.cpp src/third_party/ImGuiColorTextEdit/TextEditor.h)
 target_link_libraries(ImGuiColorTextEdit PRIVATE imgui)
-target_include_directories(ImGuiColorTextEdit INTERFACE src/third_party/ImGuiColorTextEdit)
 
 # hack until this gets merged: https://github.com/BalazsJako/ImGuiColorTextEdit/pull/7
 if(MSVC)
