@@ -8,17 +8,18 @@ Read-Compile-Run-Loop - a REPL variant for C++ (much lighter than cling)
 
 TODO:
 
-- something more interesting should happen in the background
 - get the 3 sections working
     - buttons in the GUI
     - tabbing between them with the keyboard
     - constructing the text from them
 - implement cleanup
+- parameterize which headers should be included
+- think about removing the asserts and throwing exceptions instead...
+- document the API - like any specifics for each call
+- something more interesting should happen in the background
 - redirect the output temporarily while loading the lib?
-- factor it in a few easy-to-use functions
 
-- make it work under linux (currently only compiles)
-- test under osx
+- test under linux/osx (currently only compiles)
 - add a PCH
 - read up on 'lexer programming'
 - http://cppnow.org/2018-conference/announcements/2017/12/03/call-for-submission.html

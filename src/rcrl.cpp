@@ -1,7 +1,10 @@
 #include "rcrl.h"
 
+#include "visibility.h"
+
 #include <cassert>
 #include <fstream>
+#include <map>
 #include <algorithm>
 
 #include <third_party/tiny-process-library/process.hpp>
@@ -31,6 +34,10 @@ typedef void* RCRL_Dynlib;
 
 using namespace std;
 
+// for use by the rcrl plugin
+SYMBOL_EXPORT std::map<std::string, void*> rcrl_persistence;
+SYMBOL_EXPORT std::vector<std::pair<void*, void (*)(void*)>> rcrl_deleters;
+
 namespace rcrl
 {
 vector<pair<string, RCRL_Dynlib>>   g_plugins;
@@ -43,13 +50,28 @@ void output_appender(const char* bytes, size_t n) {
     compiler_output += string(bytes, n);
 }
 
+bool           last_compile_successful = false;
+vector<string> sections;
+string         current_section;
+Mode           current_section_mode;
+
 void cleanup_plugins() {
+    assert(!is_compiling());
+
+    // clear the code sections
+    sections.clear();
+
+    // call the deleters in reverse order
+    for(auto it = rcrl_deleters.rbegin(); it != rcrl_deleters.rend(); ++it)
+        it->second(it->first);
+
+    // close the plugins in reverse order
     for(auto it = g_plugins.rbegin(); it != g_plugins.rend(); ++it)
         RCRL_CloseDynlib(it->second);
 
     string bin_folder(RCRL_BIN_FOLDER);
 #ifdef _WIN32
-	// replace forward slash with windows style slash
+    // replace forward slash with windows style slash
     std::replace(bin_folder.begin(), bin_folder.end(), '/', '\\');
 #endif // _WIN32
 
@@ -58,16 +80,54 @@ void cleanup_plugins() {
     g_plugins.clear();
 }
 
-void reconstruct_plugin_source_file() {
-    ofstream myfile(RCRL_PLUGIN_FILE);
-    myfile << "#include \"host_app.h\"\n";
-    myfile.close();
-}
-
 void submit_code(const string& code, Mode mode) {
-    ofstream myfile(RCRL_PLUGIN_FILE, ios::out | ios::app);
-    myfile << code << endl;
+    assert(!is_compiling());
+
+    // if this is the first piece of code submitted
+    if(sections.size() == 0) {
+        sections.push_back("#include \"host_app.h\"\n");
+        sections.push_back("#include \"rcrl_for_plugin.h\"\n");
+    }
+
+	auto filtered_code = code;
+	std::replace(filtered_code.begin(), filtered_code.end(), '\r', '\n');
+
+    current_section_mode = mode;
+	current_section.clear();
+    if(mode == GLOBAL) {
+        current_section += filtered_code;
+    } else if(mode == ONCE) {
+        current_section += "int RCRL_ANONYMOUS(rcrl_anon_) = [](){\n";
+        current_section += filtered_code;
+        current_section += "return 0; }();";
+    }
+    if(mode == VARS) {
+		auto type_ender = filtered_code.find_first_of(" ");
+		auto name_ender = filtered_code.find_first_of(";{(=", type_ender);
+
+		string type = filtered_code.substr(0, type_ender);
+		string name = filtered_code.substr(type_ender + 1, name_ender - type_ender - 1);
+
+		current_section += type + "* " + name + "_ptr = [](){\n";
+		current_section += "    auto& address = rcrl_persistence[\"" + name + "\"];\n";
+		current_section += "    if (address == nullptr) {\n";
+		current_section += "        address = new " + type + "();\n";
+		current_section += "        rcrl_deleters.push_back({ " + name + "_ptr, rcrl_deleter<" + type + ">});\n";
+		current_section += "    }\n";
+		current_section += "    return static_cast<" + type + "*>(address);\n";
+		current_section += "}();\n";
+		current_section += type + "& " + name + " = *" + name + "_ptr;\n";
+    }
+
+    // concatenate all the sections to make the source file to be compiled
+    ofstream myfile(RCRL_PLUGIN_FILE);
+    for(auto& section : sections)
+        myfile << section;
+    myfile << current_section;
     myfile.close();
+
+    // mark the successful compilation flag as false
+    last_compile_successful = false;
 
     compiler_output.clear();
     compiler_process =
@@ -95,12 +155,24 @@ bool try_get_exit_status_from_compile(int& exitcode) {
     if(compiler_process && compiler_process->try_get_exit_status(exitcode)) {
         // remove the compiler process
         compiler_process.reset();
+
+        last_compile_successful = exitcode == 0;
+
         return true;
     }
     return false;
 }
 
 void copy_and_load_new_plugin() {
+    assert(!is_compiling());
+    assert(last_compile_successful);
+
+    last_compile_successful = false; // shouldn't call this function twice in a row without compiling anything in between
+
+    if(current_section_mode != ONCE) {
+        sections.push_back(current_section);
+    }
+
     // copy the plugin
     auto       name_copied = string(RCRL_BIN_FOLDER) + "plugin_" + to_string(g_plugins.size()) + RCRL_EXTENSION;
     const auto copy_res = RCRL_CopyDynlib((string(RCRL_BIN_FOLDER) + "plugin" RCRL_EXTENSION).c_str(), name_copied.c_str());
@@ -113,4 +185,100 @@ void copy_and_load_new_plugin() {
     // add the plugin to the list of loaded ones - for later unloading
     g_plugins.push_back({name_copied, plugin});
 }
+
+// NOT USED FOR ANYTHING YET - parses (maybe) properly comments/strings/chars
+void parse_vars(const vector<char>& text) {
+    bool in_char                = false; // 'c'
+    bool in_string              = false; // "str"
+    bool in_comment             = false;
+    bool in_single_line_comment = false;
+    bool in_multi_line_comment  = false;
+
+    int current_line_start = 0;
+
+    vector<pair<char, int>> braces; // the current active stack of braces
+
+    vector<int> semicolons; // the positions of all semicolons
+
+    for(size_t i = 0; i < text.size(); ++i) {
+        const char c = text[i];
+
+        if(c == '"' && !in_comment && !in_char) {
+            if(!in_string) {
+                in_string = true;
+                //goto state_changed;
+            } else {
+                int num_slashes = 0;
+                while(text[i - 1 - num_slashes] == '\\') {
+                    ++num_slashes;
+                }
+
+                if(num_slashes % 2 == 0) {
+                    in_string = false;
+                    //goto state_changed;
+                }
+            }
+        }
+        if(c == '\'' && !in_comment && !in_string) {
+            if(!in_char) {
+                in_char = true;
+                //goto state_changed;
+            } else {
+                if(text[i - 1] != '\\') {
+                    in_char = false;
+                    //goto state_changed;
+                }
+            }
+        }
+        if(c == '/') {
+            if(!in_comment && !in_char && !in_string && i > 0 && text[i - 1] == '/') {
+                in_single_line_comment = true;
+                //goto state_changed;
+            }
+            if(in_multi_line_comment && text[i - 1] == '*') {
+                in_multi_line_comment = false;
+                //goto state_changed;
+            }
+        }
+        if(c == '*') {
+            if(!in_comment && !in_char && !in_string && i > 0 && text[i - 1] == '/') {
+                in_multi_line_comment = true;
+                //goto state_changed;
+            }
+        }
+        if(c == '\n') {
+            if(in_single_line_comment && text[i - 1] != '\\') {
+                in_single_line_comment = false;
+                //goto state_changed;
+            }
+        }
+
+        // proceed with tokens and code
+        if(!in_string && !in_char && !in_comment) {
+            if(c == '(' || c == '[' || c == '{') {
+                braces.push_back({c, i});
+            }
+            if(c == ')' || c == ']' || c == '}') {
+                assert(braces.back().first == c);
+                braces.pop_back();
+            }
+            if(c == ';') {
+                semicolons.push_back(i);
+            }
+        }
+
+        //state_changed:
+        // state for the next iteration of the loop
+        in_comment = in_single_line_comment && in_multi_line_comment;
+        current_line_start += (c == '\n') ? (i + 1 - current_line_start) : 0;
+
+        // assert for consistency
+        assert(!in_char || (in_char && !in_comment && !in_string));
+        assert(!in_string || (in_string && !in_char && !in_comment));
+        assert(!in_comment || (in_comment && !in_char && !in_string));
+    }
+
+    assert(braces.size() == 0);
+}
+
 } // namespace rcrl

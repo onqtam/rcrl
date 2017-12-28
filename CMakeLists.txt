@@ -33,6 +33,7 @@ add_executable(host_app
     src/host_app.h
     src/rcrl.cpp
     src/rcrl.h
+    src/rcrl_for_plugin.h
     src/visibility.h
     src/third_party/imgui/examples/opengl2_example/imgui_impl_glfw.cpp
 )

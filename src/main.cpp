@@ -17,7 +17,7 @@ void My_ImGui_ImplGlfwGL2_KeyCallback(GLFWwindow* w, int key, int scancode, int 
     // add the '\r' char when 'enter' is pressed - for ImGuiColorTextEdit
     ImGuiIO& io = ImGui::GetIO();
     if(key == GLFW_KEY_ENTER && (action == GLFW_PRESS || action == GLFW_REPEAT))
-        io.AddInputCharacter((unsigned short)'\r');
+        io.AddInputCharacter((unsigned short)'\n');
 
     // this should be commented until this is fixed: https://github.com/BalazsJako/ImGuiColorTextEdit/issues/8
     //if(!io.WantCaptureKeyboard && !io.WantTextInput && key == GLFW_KEY_GRAVE_ACCENT &&
@@ -42,9 +42,6 @@ int main() {
 
     // overwrite with my own callback
     glfwSetKeyCallback(window, My_ImGui_ImplGlfwGL2_KeyCallback);
-
-    // init the plugin file
-    rcrl::reconstruct_plugin_source_file();
 
     // an editor instance - for the already submitted code
     TextEditor history;
@@ -154,7 +151,7 @@ int main() {
             }
         }
 
-        ImGui::ShowDemoWindow();
+        //ImGui::ShowDemoWindow();
 
         // rendering
         glViewport(0, 0, display_w, display_h);
