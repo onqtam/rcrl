@@ -8,7 +8,7 @@ Read-Compile-Run-Loop - a REPL variant for C++ (much lighter than cling)
 
 TODO:
 
-- something interesting should happen in the background
+- something more interesting should happen in the background
 - get the 3 sections working
     - buttons in the GUI
     - tabbing between them with the keyboard

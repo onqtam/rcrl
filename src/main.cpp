@@ -34,7 +34,7 @@ typedef void* RCRL_Dynlib;
 using namespace std;
 
 // globals
-bool                              g_rcrl_console_visible = true;
+//bool                              g_rcrl_console_visible = true;
 vector<pair<string, RCRL_Dynlib>> g_plugins;
 
 void cleanup_plugins() {
@@ -57,6 +57,7 @@ void RCRL_ImGui_ImplGlfwGL2_KeyCallback(GLFWwindow* w, int key, int scancode, in
     // call the callback from the imgui/glfw integration
     ImGui_ImplGlfwGL2_KeyCallback(w, key, scancode, action, mods);
 
+	// add the '\r' char when 'enter' is pressed - for ImGuiColorTextEdit
     ImGuiIO& io = ImGui::GetIO();
     if(key == GLFW_KEY_ENTER && (action == GLFW_PRESS || action == GLFW_REPEAT))
         io.AddInputCharacter((unsigned short)'\r');
@@ -100,6 +101,8 @@ int main() {
     unique_ptr<TinyProcessLib::Process> compiler_process;
     string                              compiler_output;
     auto output_appender = [&](const char* bytes, size_t n) { compiler_output += string(bytes, n); };
+
+	float frame = 0.f;
 
     // Main loop
     while(!glfwWindowShouldClose(window)) {
@@ -212,7 +215,12 @@ int main() {
         glClearColor(0.45f, 0.55f, 0.60f, 1.00f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        draw();
+		glPushMatrix();
+		glLoadIdentity();
+		frame += 1.f;
+		glRotatef(frame, 0, 0, 1);
+		draw();
+		glPopMatrix();
 
         ImGui::Render();
         glfwSwapBuffers(window);

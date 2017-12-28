@@ -10,11 +10,11 @@ void print() { cout << "forced print!" << endl; }
 void draw() {
     glBegin(GL_TRIANGLES);
 
-    glColor3f(0.5, 0, 0);
+    glColor3f(1, 0, 0);
 
-    glVertex2f(0.f, 1.f);
-    glVertex2f(-1.f, -1.f);
-    glVertex2f(1.f, -1.f);
+    glVertex2f(-1, -1);
+    glVertex2f(0, 1);
+    glVertex2f(1, -1);
 
     glEnd();
 }
