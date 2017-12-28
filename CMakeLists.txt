@@ -107,7 +107,7 @@ target_link_libraries(host_app PRIVATE imgui glfw ImGuiColorTextEdit tiny-proces
 if(APPLE)
     target_link_libraries(host_app PRIVATE "-framework OpenGL")
 elseif(UNIX)
-    target_link_libraries(host_app PRIVATE dl opengl)
+    target_link_libraries(host_app PRIVATE dl GL)
 else()
     target_link_libraries(host_app PRIVATE opengl32)
 endif()
