@@ -130,7 +130,8 @@ int main() {
         //}
 
         // if there is a spawned compiler process and it has just finished
-        if(int exitcode = 0; rcrl::try_get_exit_status_from_compile(exitcode)) {
+        int exitcode = 0;
+        if(rcrl::try_get_exit_status_from_compile(exitcode)) {
             // we can edit the code again
             editor.SetReadOnly(false);
 
