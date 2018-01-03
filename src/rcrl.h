@@ -13,7 +13,7 @@ enum Mode
 };
 
 void        cleanup_plugins();
-void        submit_code(const std::string& code, Mode mode);
+void        submit_code(std::string code, Mode mode);
 std::string get_new_compiler_output();
 bool        is_compiling();
 bool        try_get_exit_status_from_compile(int& exitcode);

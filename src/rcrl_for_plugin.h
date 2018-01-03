@@ -10,6 +10,9 @@
 #define SYMBOL_IMPORT
 #endif // _WIN32
 
+#define RCRL_ONCE_BEGIN int RCRL_ANONYMOUS(rcrl_anon_) = [](){
+#define RCRL_ONCE_END return 0; }();
+
 #include <map>
 #include <vector>
 #include <string>

@@ -64,7 +64,7 @@ void cleanup_plugins() {
     // call the deleters in reverse order
     for(auto it = rcrl_deleters.rbegin(); it != rcrl_deleters.rend(); ++it)
         it->second(it->first);
-	rcrl_deleters.clear();
+    rcrl_deleters.clear();
 
     // close the plugins in reverse order
     for(auto it = g_plugins.rbegin(); it != g_plugins.rend(); ++it)
@@ -81,43 +81,44 @@ void cleanup_plugins() {
     g_plugins.clear();
 }
 
-void submit_code(const string& code, Mode mode) {
+void submit_code(string code, Mode mode) {
     assert(!is_compiling());
+    assert(code.size());
 
     // if this is the first piece of code submitted
     if(sections.size() == 0) {
-        sections.push_back("#include \"host_app.h\"\n");
         sections.push_back("#include \"rcrl_for_plugin.h\"\n");
     }
 
-	auto filtered_code = code;
-	std::replace(filtered_code.begin(), filtered_code.end(), '\r', '\n');
+    std::replace(code.begin(), code.end(), '\r', '\n');
+    if(code.back() != '\n')
+        code.push_back('\n');
 
     current_section_mode = mode;
-	current_section.clear();
+    current_section.clear();
     if(mode == GLOBAL) {
-        current_section += filtered_code;
+        current_section += code;
     } else if(mode == ONCE) {
-        current_section += "int RCRL_ANONYMOUS(rcrl_anon_) = [](){\n";
-        current_section += filtered_code;
-        current_section += "return 0; }();";
+        current_section += "\nRCRL_ONCE_BEGIN\n";
+        current_section += code;
+        current_section += "RCRL_ONCE_END\n";
     }
     if(mode == VARS) {
-		auto type_ender = filtered_code.find_first_of(" ");
-		auto name_ender = filtered_code.find_first_of(";{(=", type_ender);
+        auto type_ender = code.find_first_of(" ");
+        auto name_ender = code.find_first_of(";{(=", type_ender);
 
-		string type = filtered_code.substr(0, type_ender);
-		string name = filtered_code.substr(type_ender + 1, name_ender - type_ender - 1);
+        string type = code.substr(0, type_ender);
+        string name = code.substr(type_ender + 1, name_ender - type_ender - 1);
 
-		current_section += type + "* " + name + "_ptr = [](){\n";
-		current_section += "    auto& address = rcrl_persistence[\"" + name + "\"];\n";
-		current_section += "    if (address == nullptr) {\n";
-		current_section += "        address = new " + type + "();\n";
-		current_section += "        rcrl_deleters.push_back({address, rcrl_deleter<" + type + ">});\n";
-		current_section += "    }\n";
-		current_section += "    return static_cast<" + type + "*>(address);\n";
-		current_section += "}();\n";
-		current_section += type + "& " + name + " = *" + name + "_ptr;\n";
+        current_section += type + "* " + name + "_ptr = [](){\n";
+        current_section += "    auto& address = rcrl_persistence[\"" + name + "\"];\n";
+        current_section += "    if (address == nullptr) {\n";
+        current_section += "        address = new " + type + "();\n";
+        current_section += "        rcrl_deleters.push_back({address, rcrl_deleter<" + type + ">});\n";
+        current_section += "    }\n";
+        current_section += "    return static_cast<" + type + "*>(address);\n";
+        current_section += "}();\n";
+        current_section += type + "& " + name + " = *" + name + "_ptr;\n\n";
     }
 
     // concatenate all the sections to make the source file to be compiled
