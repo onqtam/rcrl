@@ -58,13 +58,14 @@ Mode           current_section_mode;
 void cleanup_plugins() {
     assert(!is_compiling());
 
-    // clear the code sections
-    sections.clear();
-
     // call the deleters in reverse order
     for(auto it = rcrl_deleters.rbegin(); it != rcrl_deleters.rend(); ++it)
         it->second(it->first);
     rcrl_deleters.clear();
+
+    // clear the code sections and pointers to globals
+    sections.clear();
+    rcrl_persistence.clear();
 
     // close the plugins in reverse order
     for(auto it = g_plugins.rbegin(); it != g_plugins.rend(); ++it)
