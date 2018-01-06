@@ -6,6 +6,7 @@
 #include <fstream>
 #include <map>
 #include <cctype> // isspace()
+#include <stdexcept>
 #include <algorithm>
 #include <iostream> // TODO: to remove
 
@@ -93,7 +94,7 @@ void cleanup_plugins() {
 
 vector<VariableDefinition> parse_vars(string text);
 
-void submit_code(string code, Mode mode) {
+bool submit_code(string code, Mode mode) {
     assert(!is_compiling());
     assert(code.size());
 
@@ -116,18 +117,23 @@ void submit_code(string code, Mode mode) {
         current_section += "RCRL_ONCE_END\n";
     }
     if(mode == VARS) {
-        auto vars = parse_vars(code);
+        try {
+            auto vars = parse_vars(code);
 
-        for(const auto& var : vars) {
-            current_section += var.type + "* " + var.name + "_ptr = [](){\n";
-            current_section += "    auto& address = rcrl_persistence[\"" + var.name + "\"];\n";
-            current_section += "    if (address == nullptr) {\n";
-            current_section += "        address = new " + var.type + var.initializer + ";\n";
-            current_section += "        rcrl_deleters.push_back({address, rcrl_deleter<" + var.type + ">});\n";
-            current_section += "    }\n";
-            current_section += "    return static_cast<" + var.type + "*>(address);\n";
-            current_section += "}();\n";
-            current_section += var.type + "& " + var.name + " = *" + var.name + "_ptr;\n\n";
+            for(const auto& var : vars) {
+                current_section += var.type + "* " + var.name + "_ptr = [](){\n";
+                current_section += "    auto& address = rcrl_persistence[\"" + var.name + "\"];\n";
+                current_section += "    if (address == nullptr) {\n";
+                current_section += "        address = new " + var.type + var.initializer + ";\n";
+                current_section += "        rcrl_deleters.push_back({address, rcrl_deleter<" + var.type + ">});\n";
+                current_section += "    }\n";
+                current_section += "    return static_cast<" + var.type + "*>(address);\n";
+                current_section += "}();\n";
+                current_section += var.type + "& " + var.name + " = *" + var.name + "_ptr;\n\n";
+            }
+        } catch(exception& e) {
+			output_appender(e.what(), strlen(e.what()));
+			return true;
         }
     }
 
@@ -152,6 +158,8 @@ void submit_code(string code, Mode mode) {
 #endif // Visual Studio
                                                  ,
                                                  "", output_appender, output_appender);
+
+	return false;
 }
 
 std::string get_new_compiler_output() {
@@ -344,10 +352,11 @@ vector<VariableDefinition> parse_vars(string text) {
 
         // proceed with parsing variable definitions
         if(!in_string && !in_char) {
-            // if after the name of a variable
             if(braces.size() == 0 && (c == ';' || c == '(' || c == '{' || c == '=')) {
+				// if after the name of a variable
                 if(!in_var) {
-                    assert(whitespace_ends.size() > 0);
+                    if(whitespace_ends.size() == 0)
+                        throw runtime_error("parse error");
 
                     auto var_name_begin  = whitespace_ends.back();
                     auto var_name_len    = i - var_name_begin;
@@ -361,7 +370,7 @@ vector<VariableDefinition> parse_vars(string text) {
                     trim(current_var.type);
                 }
 
-                // if we are finalizing the variable
+                // if we are finalizing the variable - check if there is anything for its initialization
                 if(c == ';' && in_var) {
                     current_var.initializer = text.substr(current_var_name_end, i - current_var_name_end);
                     trim(current_var.initializer);
@@ -392,8 +401,10 @@ vector<VariableDefinition> parse_vars(string text) {
             }
             if(c == ')' || c == ']' || c == '}') {
                 // check that we are closing the right bracket
-                assert(braces.size() > 0);
-                assert(braces.back().first == (c == ')' ? '(' : (c == '}' ? '{' : '[')));
+                if(braces.size() == 0)
+                    throw runtime_error("parse error - encountered closing brace without an opening one");
+                if(braces.back().first != (c == ')' ? '(' : (c == '}' ? '{' : '[')))
+                    throw runtime_error("parse error - closing brace mismatch");
                 braces.pop_back();
             }
             if(c == ';') {
@@ -425,12 +436,15 @@ vector<VariableDefinition> parse_vars(string text) {
     if(in_whitespace)
         whitespace_ends.push_back(text.size() - 1);
 
-    assert(!in_var);
-    assert(braces.size() == 0);
     assert(whitespace_begins.size() == whitespace_ends.size());
+    if(in_var)
+        throw runtime_error("parse error - parsing of variables not finished");
+    if(braces.size() != 0)
+        throw runtime_error("parse error - not all braces are closed");
     // and check that nothing is left unparsed - so people can't enter in garbage
-    for(auto i = current_var_name_end + 1; i < text.size(); ++i)
-        assert(isspace(text[i]));
+    for(auto i = (semicolons.size() ? semicolons.back() + 1 : 0); i < text.size(); ++i)
+        if(!isspace(text[i]))
+            throw runtime_error("parse error - unparsed contents");
 
     return out;
 }

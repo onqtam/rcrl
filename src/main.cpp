@@ -106,6 +106,7 @@ int main() {
             auto compile = ImGui::Button("Compile and run");
             if(ImGui::Button("Cleanup") && !rcrl::is_compiling()) {
                 rcrl::cleanup_plugins();
+				compiler_output.clear();
                 history.SetText("\r");
             }
             //ImGui::Text("Program output");
@@ -120,10 +121,10 @@ int main() {
                 compiler_output.clear();
 
                 // submit to the rcrl engine
-                rcrl::submit_code(editor.GetText(), mode);
-
-                // make the editor code untouchable while compiling
-                editor.SetReadOnly(true);
+				if (!rcrl::submit_code(editor.GetText(), mode)) {
+					// make the editor code untouchable while compiling
+					editor.SetReadOnly(true);
+				}
             }
         }
         ImGui::End();
@@ -141,7 +142,10 @@ int main() {
             } else {
                 // append to the history and focus last line
                 history.SetCursorPosition({history.GetTotalLines(), 1});
-                history.SetText(history.GetText() + editor.GetText());
+                auto history_text = history.GetText();
+                if(history_text.size() && history_text.back() != '\n')
+                    history_text += '\n';
+                history.SetText(history_text + editor.GetText());
 
                 // clear the editor
                 editor.SetText("\r"); // an empty string "" breaks it for some reason...
