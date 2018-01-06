@@ -121,15 +121,8 @@ bool submit_code(string code, Mode mode) {
             auto vars = parse_vars(code);
 
             for(const auto& var : vars) {
-                current_section += var.type + "* " + var.name + "_ptr = []() {\n";
-                current_section += "    auto& address = rcrl_persistence[\"" + var.name + "\"];\n";
-                current_section += "    if(address == nullptr) {\n";
-                current_section += "        address = new " + var.type + var.initializer + ";\n";
-                current_section += "        rcrl_deleters.push_back({address, rcrl_deleter<" + var.type + ">});\n";
-                current_section += "    }\n";
-                current_section += "    return static_cast<" + var.type + "*>(address);\n";
-                current_section += "}();\n";
-                current_section += var.type + "& " + var.name + " = *" + var.name + "_ptr;\n\n";
+                current_section += "RCRL_VAR(" + var.type + ", " + var.name + ", " +
+                                   (var.initializer.size() ? var.initializer : "RCRL_EMPTY()") + ");\n";
             }
         } catch(exception& e) {
             output_appender(e.what(), strlen(e.what()));
@@ -446,7 +439,7 @@ vector<VariableDefinition> parse_vars(string text) {
     if(braces.size() != 0)
         throw runtime_error("parse error - not all braces are closed");
     // and check that nothing is left unparsed - so people can't enter in garbage
-    for(auto i = (semicolons.size() ? semicolons.back() + 1 : 0); i < text.size(); ++i)
+    for(auto i = (semicolons.size() ? semicolons.back() + 1u : 0u); i < text.size(); ++i)
         if(!isspace(text[i]))
             throw runtime_error("parse error - unparsed contents");
 
