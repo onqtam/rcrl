@@ -5,7 +5,8 @@
 #include <cassert>
 #include <fstream>
 #include <map>
-#include <cctype> // isspace()
+#include <cctype>  // isspace()
+#include <cstring> // strlen()
 #include <stdexcept>
 #include <algorithm>
 #include <iostream> // TODO: to remove
