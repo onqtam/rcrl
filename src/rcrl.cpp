@@ -121,9 +121,9 @@ bool submit_code(string code, Mode mode) {
             auto vars = parse_vars(code);
 
             for(const auto& var : vars) {
-                current_section += var.type + "* " + var.name + "_ptr = [](){\n";
+                current_section += var.type + "* " + var.name + "_ptr = []() {\n";
                 current_section += "    auto& address = rcrl_persistence[\"" + var.name + "\"];\n";
-                current_section += "    if (address == nullptr) {\n";
+                current_section += "    if(address == nullptr) {\n";
                 current_section += "        address = new " + var.type + var.initializer + ";\n";
                 current_section += "        rcrl_deleters.push_back({address, rcrl_deleter<" + var.type + ">});\n";
                 current_section += "    }\n";
@@ -132,8 +132,8 @@ bool submit_code(string code, Mode mode) {
                 current_section += var.type + "& " + var.name + " = *" + var.name + "_ptr;\n\n";
             }
         } catch(exception& e) {
-			output_appender(e.what(), strlen(e.what()));
-			return true;
+            output_appender(e.what(), strlen(e.what()));
+            return true;
         }
     }
 
@@ -159,7 +159,7 @@ bool submit_code(string code, Mode mode) {
                                                  ,
                                                  "", output_appender, output_appender);
 
-	return false;
+    return false;
 }
 
 std::string get_new_compiler_output() {
@@ -309,7 +309,7 @@ vector<VariableDefinition> parse_vars(string text) {
     bool in_string     = false; // "str"
     bool in_whitespace = false;
 
-    int current_line_start = 0;
+    bool just_enterned_char_string = false;
 
     vector<pair<char, int>> braces; // the current active stack of braces
 
@@ -328,7 +328,8 @@ vector<VariableDefinition> parse_vars(string text) {
 
         if(c == '"' && !in_char) {
             if(!in_string) {
-                in_string = true;
+                in_string                 = true;
+                just_enterned_char_string = true;
             } else {
                 int num_slashes = 0;
                 while(text[i - 1 - num_slashes] == '\\') {
@@ -342,7 +343,8 @@ vector<VariableDefinition> parse_vars(string text) {
         }
         if(c == '\'' && !in_string) {
             if(!in_char) {
-                in_char = true;
+                in_char                   = true;
+                just_enterned_char_string = true;
             } else {
                 if(text[i - 1] != '\\') {
                     in_char = false;
@@ -353,10 +355,10 @@ vector<VariableDefinition> parse_vars(string text) {
         // proceed with parsing variable definitions
         if(!in_string && !in_char) {
             if(braces.size() == 0 && (c == ';' || c == '(' || c == '{' || c == '=')) {
-				// if after the name of a variable
+                // if after the name of a variable
                 if(!in_var) {
                     if(whitespace_ends.size() == 0)
-                        throw runtime_error("parse error");
+                        throw runtime_error("parse error - expected <type> <name>... with atleast 1 space in between");
 
                     auto var_name_begin  = whitespace_ends.back();
                     auto var_name_len    = i - var_name_begin;
@@ -410,6 +412,9 @@ vector<VariableDefinition> parse_vars(string text) {
             if(c == ';') {
                 semicolons.push_back(i);
             }
+        }
+
+        if(!in_string && !in_char || just_enterned_char_string) {
             // if the current char is not a whitespace, but the previous one was - mark the end of a whitespace block
             if(!isspace(c) && (i == 0 || isspace(text[i - 1]))) {
                 in_whitespace = false;
@@ -425,8 +430,7 @@ vector<VariableDefinition> parse_vars(string text) {
             }
         }
 
-        // state for the next iteration of the loop
-        current_line_start += (c == '\n') ? (i + 1 - current_line_start) : 0;
+        just_enterned_char_string = false;
 
         // assert for consistency
         assert(!in_char || (in_char && !in_string));
