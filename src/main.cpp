@@ -16,7 +16,7 @@ void My_ImGui_ImplGlfwGL2_KeyCallback(GLFWwindow* w, int key, int scancode, int 
 
     // add the '\r' char when 'enter' is pressed - for ImGuiColorTextEdit
     ImGuiIO& io = ImGui::GetIO();
-    if(key == GLFW_KEY_ENTER && (action == GLFW_PRESS || action == GLFW_REPEAT))
+    if(key == GLFW_KEY_ENTER && !io.KeyCtrl && (action == GLFW_PRESS || action == GLFW_REPEAT))
         io.AddInputCharacter((unsigned short)'\n');
 
     // this should be commented until this is fixed: https://github.com/BalazsJako/ImGuiColorTextEdit/issues/8
@@ -106,7 +106,7 @@ int main() {
             auto compile = ImGui::Button("Compile and run");
             if(ImGui::Button("Cleanup") && !rcrl::is_compiling()) {
                 rcrl::cleanup_plugins();
-				history.SetText("\r");
+                history.SetText("\r");
             }
             //ImGui::Text("Program output");
             //ImGui::InputTextMultiline("##program_output", "", 0, ImVec2(-1.f, -1.f), ImGuiInputTextFlags_ReadOnly);

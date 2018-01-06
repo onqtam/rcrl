@@ -5,7 +5,9 @@
 #include <cassert>
 #include <fstream>
 #include <map>
+#include <cctype> // isspace()
 #include <algorithm>
+#include <iostream> // TODO: to remove
 
 #include <third_party/tiny-process-library/process.hpp>
 
@@ -40,6 +42,13 @@ SYMBOL_EXPORT std::vector<std::pair<void*, void (*)(void*)>> rcrl_deleters;
 
 namespace rcrl
 {
+struct VariableDefinition
+{
+    string type;
+    string name;
+    string initializer;
+};
+
 vector<pair<string, RCRL_Dynlib>>   g_plugins;
 unique_ptr<TinyProcessLib::Process> compiler_process;
 string                              compiler_output;
@@ -82,6 +91,8 @@ void cleanup_plugins() {
     g_plugins.clear();
 }
 
+vector<VariableDefinition> parse_vars(string text);
+
 void submit_code(string code, Mode mode) {
     assert(!is_compiling());
     assert(code.size());
@@ -105,21 +116,19 @@ void submit_code(string code, Mode mode) {
         current_section += "RCRL_ONCE_END\n";
     }
     if(mode == VARS) {
-        auto type_ender = code.find_first_of(" ");
-        auto name_ender = code.find_first_of(";{(=", type_ender);
+        auto vars = parse_vars(code);
 
-        string type = code.substr(0, type_ender);
-        string name = code.substr(type_ender + 1, name_ender - type_ender - 1);
-
-        current_section += type + "* " + name + "_ptr = [](){\n";
-        current_section += "    auto& address = rcrl_persistence[\"" + name + "\"];\n";
-        current_section += "    if (address == nullptr) {\n";
-        current_section += "        address = new " + type + "();\n";
-        current_section += "        rcrl_deleters.push_back({address, rcrl_deleter<" + type + ">});\n";
-        current_section += "    }\n";
-        current_section += "    return static_cast<" + type + "*>(address);\n";
-        current_section += "}();\n";
-        current_section += type + "& " + name + " = *" + name + "_ptr;\n\n";
+        for(const auto& var : vars) {
+            current_section += var.type + "* " + var.name + "_ptr = [](){\n";
+            current_section += "    auto& address = rcrl_persistence[\"" + var.name + "\"];\n";
+            current_section += "    if (address == nullptr) {\n";
+            current_section += "        address = new " + var.type + var.initializer + ";\n";
+            current_section += "        rcrl_deleters.push_back({address, rcrl_deleter<" + var.type + ">});\n";
+            current_section += "    }\n";
+            current_section += "    return static_cast<" + var.type + "*>(address);\n";
+            current_section += "}();\n";
+            current_section += var.type + "& " + var.name + " = *" + var.name + "_ptr;\n\n";
+        }
     }
 
     // concatenate all the sections to make the source file to be compiled
@@ -189,27 +198,45 @@ void copy_and_load_new_plugin() {
     g_plugins.push_back({name_copied, plugin});
 }
 
-// NOT USED FOR ANYTHING YET - parses (maybe) properly comments/strings/chars
-void parse_vars(const vector<char>& text) {
+// ======================================================================================
+// == WHAT FOLLOWS IS HORRIBLE CODE FOR PARSING VARIABLES AND THEIR TYPES/INITIALIZERS ==
+// ======================================================================================
+
+void ltrim(std::string& s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) { return !std::isspace(ch); }));
+}
+
+void rtrim(std::string& s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) { return !std::isspace(ch); }).base(), s.end());
+}
+
+void trim(std::string& s) {
+    ltrim(s);
+    rtrim(s);
+}
+
+string remove_comments(const string& text) {
+    string out(text);
+
     bool in_char                = false; // 'c'
     bool in_string              = false; // "str"
     bool in_comment             = false;
     bool in_single_line_comment = false;
     bool in_multi_line_comment  = false;
 
-    int current_line_start = 0;
-
-    vector<pair<char, int>> braces; // the current active stack of braces
-
-    vector<int> semicolons; // the positions of all semicolons
-
     for(size_t i = 0; i < text.size(); ++i) {
         const char c = text[i];
+
+        in_comment = in_single_line_comment || in_multi_line_comment;
+
+        // assert for consistency
+        assert(!in_char || (in_char && !in_comment && !in_string));
+        assert(!in_string || (in_string && !in_char && !in_comment));
+        assert(!in_comment || (in_comment && !in_char && !in_string));
 
         if(c == '"' && !in_comment && !in_char) {
             if(!in_string) {
                 in_string = true;
-                //goto state_changed;
             } else {
                 int num_slashes = 0;
                 while(text[i - 1 - num_slashes] == '\\') {
@@ -218,70 +245,194 @@ void parse_vars(const vector<char>& text) {
 
                 if(num_slashes % 2 == 0) {
                     in_string = false;
-                    //goto state_changed;
                 }
             }
         }
         if(c == '\'' && !in_comment && !in_string) {
             if(!in_char) {
                 in_char = true;
-                //goto state_changed;
             } else {
                 if(text[i - 1] != '\\') {
                     in_char = false;
-                    //goto state_changed;
                 }
             }
         }
         if(c == '/') {
             if(!in_comment && !in_char && !in_string && i > 0 && text[i - 1] == '/') {
                 in_single_line_comment = true;
-                //goto state_changed;
+                out[i - 1]             = ' '; // substitute last character with whitespace - apparently we are in a comment
+                out[i]                 = ' ';
+                continue;
             }
             if(in_multi_line_comment && text[i - 1] == '*') {
                 in_multi_line_comment = false;
-                //goto state_changed;
+                out[i]                = ' '; // append whitespace
+                continue;
             }
         }
         if(c == '*') {
             if(!in_comment && !in_char && !in_string && i > 0 && text[i - 1] == '/') {
                 in_multi_line_comment = true;
-                //goto state_changed;
+                out[i - 1]            = ' '; // substitute last character with whitespace - apparently we are in a comment
+                out[i]                = ' ';
+                continue;
             }
         }
         if(c == '\n') {
             if(in_single_line_comment && text[i - 1] != '\\') {
                 in_single_line_comment = false;
-                //goto state_changed;
+                continue;
             }
         }
 
-        // proceed with tokens and code
-        if(!in_string && !in_char && !in_comment) {
+        if(in_comment) {
+            // contents of comments are turned into whitespace
+            out[i] = ' ';
+        }
+    }
+
+    return out;
+}
+
+vector<VariableDefinition> parse_vars(string text) {
+    vector<VariableDefinition> out;
+
+    bool in_char       = false; // 'c'
+    bool in_string     = false; // "str"
+    bool in_whitespace = false;
+
+    int current_line_start = 0;
+
+    vector<pair<char, int>> braces; // the current active stack of braces
+
+    vector<int> semicolons;        // the positions of all semicolons
+    vector<int> whitespace_begins; // the positions of all whitespace beginings
+    vector<int> whitespace_ends;   // the positions of all whitespace endings
+
+    text = remove_comments(text);
+
+    VariableDefinition current_var;
+    bool               in_var               = false;
+    size_t             current_var_name_end = 0;
+
+    for(size_t i = 0; i < text.size(); ++i) {
+        const char c = text[i];
+
+        if(c == '"' && !in_char) {
+            if(!in_string) {
+                in_string = true;
+            } else {
+                int num_slashes = 0;
+                while(text[i - 1 - num_slashes] == '\\') {
+                    ++num_slashes;
+                }
+
+                if(num_slashes % 2 == 0) {
+                    in_string = false;
+                }
+            }
+        }
+        if(c == '\'' && !in_string) {
+            if(!in_char) {
+                in_char = true;
+            } else {
+                if(text[i - 1] != '\\') {
+                    in_char = false;
+                }
+            }
+        }
+
+        // proceed with parsing variable definitions
+        if(!in_string && !in_char) {
+            // if after the name of a variable
+            if(braces.size() == 0 && (c == ';' || c == '(' || c == '{' || c == '=')) {
+                if(!in_var) {
+                    assert(whitespace_ends.size() > 0);
+
+                    auto var_name_begin  = whitespace_ends.back();
+                    auto var_name_len    = i - var_name_begin;
+                    current_var_name_end = i;
+                    in_var               = true;
+
+                    current_var.name = text.substr(var_name_begin, var_name_len);
+                    trim(current_var.name);
+                    int type_begin   = semicolons.size() ? semicolons.back() + 1 : 0;
+                    current_var.type = text.substr(type_begin, var_name_begin - type_begin);
+                    trim(current_var.type);
+                }
+
+                // if we are finalizing the variable
+                if(c == ';' && in_var) {
+                    current_var.initializer = text.substr(current_var_name_end, i - current_var_name_end);
+                    trim(current_var.initializer);
+                    if(current_var.initializer.size() && current_var.initializer.front() == '=') {
+                        current_var.initializer.erase(current_var.initializer.begin());
+                        trim(current_var.initializer);
+                    }
+
+                    if(current_var.initializer.size() && current_var.initializer.front() != '(' &&
+                       current_var.initializer.front() != '{') {
+                        current_var.initializer = "(" + current_var.initializer + ")";
+                    }
+
+                    // TODO: remove debug prints
+                    cout << current_var.type << endl;
+                    cout << current_var.name << endl;
+                    cout << current_var.initializer << endl;
+
+                    // var parsed
+                    out.push_back(current_var);
+
+                    in_var = false;
+                }
+            }
+
             if(c == '(' || c == '[' || c == '{') {
                 braces.push_back({c, i});
             }
             if(c == ')' || c == ']' || c == '}') {
-                assert(braces.back().first == c);
+                // check that we are closing the right bracket
+                assert(braces.size() > 0);
+                assert(braces.back().first == (c == ')' ? '(' : (c == '}' ? '{' : '[')));
                 braces.pop_back();
             }
             if(c == ';') {
                 semicolons.push_back(i);
             }
+            // if the current char is not a whitespace, but the previous one was - mark the end of a whitespace block
+            if(!isspace(c) && (i == 0 || isspace(text[i - 1]))) {
+                in_whitespace = false;
+                whitespace_ends.push_back(i);
+                if(i == 0)
+                    whitespace_begins.push_back(i); // handle corner case
+                assert(whitespace_begins.size() == whitespace_ends.size());
+            }
+            // if the current char is a whitespace, but the previous wasn't - mark the start of a whitespace block
+            if(isspace(c) && (i == 0 || !isspace(text[i - 1]))) {
+                whitespace_begins.push_back(i);
+                in_whitespace = true;
+            }
         }
 
-        //state_changed:
         // state for the next iteration of the loop
-        in_comment = in_single_line_comment && in_multi_line_comment;
         current_line_start += (c == '\n') ? (i + 1 - current_line_start) : 0;
 
         // assert for consistency
-        assert(!in_char || (in_char && !in_comment && !in_string));
-        assert(!in_string || (in_string && !in_char && !in_comment));
-        assert(!in_comment || (in_comment && !in_char && !in_string));
+        assert(!in_char || (in_char && !in_string));
+        assert(!in_string || (in_string && !in_char));
     }
 
+    if(in_whitespace)
+        whitespace_ends.push_back(text.size() - 1);
+
+    assert(!in_var);
     assert(braces.size() == 0);
+    assert(whitespace_begins.size() == whitespace_ends.size());
+    // and check that nothing is left unparsed - so people can't enter in garbage
+    for(auto i = current_var_name_end + 1; i < text.size(); ++i)
+        assert(isspace(text[i]));
+
+    return out;
 }
 
 } // namespace rcrl
