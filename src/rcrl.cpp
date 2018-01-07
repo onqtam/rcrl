@@ -53,6 +53,7 @@ struct VariableDefinition
     string type;
     string name;
     string initializer;
+    bool   has_assignment = false;
 };
 
 vector<pair<string, RCRL_Dynlib>>   g_plugins;
@@ -128,7 +129,7 @@ bool submit_code(string code, Mode mode) {
             for(const auto& var : vars) {
                 if(var.type == "auto" || var.type == "const auto")
                     current_section += "RCRL_VAR_AUTO(" + var.name + ", " + (var.type == "auto" ? "RCRL_EMPTY()" : "const") +
-                                       ", " + var.initializer + ");\n";
+                                       ", " + (var.has_assignment ? "=" : "RCRL_EMPTY()") + ", " + var.initializer + ");\n";
                 else
                     current_section += "RCRL_VAR((" + var.type + "), " + var.name + ", " +
                                        (var.initializer.size() ? var.initializer : "RCRL_EMPTY()") + ");\n";
@@ -402,7 +403,10 @@ vector<VariableDefinition> parse_vars(string text) {
                     trim(current_var.initializer);
                     if(current_var.initializer.size() && current_var.initializer.front() == '=') {
                         current_var.initializer.erase(current_var.initializer.begin());
+						current_var.has_assignment = true;
                         trim(current_var.initializer);
+						if(current_var.initializer.size() == 0)
+							throw runtime_error("parse error - no initializer code between '=' and ';'");
                     }
 
                     if(current_var.initializer.size() && current_var.initializer.front() != '(' &&
@@ -418,7 +422,9 @@ vector<VariableDefinition> parse_vars(string text) {
                     // var parsed
                     out.push_back(current_var);
 
+					// clear state
                     in_var = false;
+					current_var = VariableDefinition();
                 }
             }
 

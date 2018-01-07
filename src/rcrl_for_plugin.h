@@ -1,6 +1,6 @@
 #pragma once
 
-//#include <initializer_list>
+#include <initializer_list>
 
 #define RCRL_EMPTY()
 
@@ -35,12 +35,12 @@
     RCRL_HANDLE_BRACED_VA_ARGS(type)& name = *rcrl_##name##_ptr
 
 // for vars with auto type
-#define RCRL_VAR_AUTO(name, constness, ...)                                                                                 \
+#define RCRL_VAR_AUTO(name, constness, assignment, ...)                                                                     \
     auto rcrl_##name##_type_returner = []() -> auto {                                                                       \
-        constness auto temp = __VA_ARGS__;                                                                                  \
+        constness auto temp assignment __VA_ARGS__;                                                                         \
         return temp;                                                                                                        \
     };                                                                                                                      \
-    RCRL_VAR((constness decltype(rcrl_##name##_type_returner())), name, (__VA_ARGS__))
+    RCRL_VAR((constness decltype(rcrl_##name##_type_returner())), name, __VA_ARGS__)
 
 // the symbols for persistence which the host app should export
 SYMBOL_IMPORT void*& rcrl_get_persistence(const char* var_name);
