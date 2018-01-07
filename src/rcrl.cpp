@@ -122,7 +122,7 @@ bool submit_code(string code, Mode mode) {
             auto vars = parse_vars(code);
 
             for(const auto& var : vars) {
-                current_section += "RCRL_VAR(" + var.type + ", " + var.name + ", " +
+                current_section += "RCRL_VAR((" + var.type + "), " + var.name + ", " +
                                    (var.initializer.size() ? var.initializer : "RCRL_EMPTY()") + ");\n";
             }
         } catch(exception& e) {
