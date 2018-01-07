@@ -127,7 +127,8 @@ bool submit_code(string code, Mode mode) {
 
             for(const auto& var : vars) {
                 if(var.type == "auto" || var.type == "const auto")
-                    current_section += "RCRL_VAR_AUTO(" + var.name + ", " + var.initializer + ");\n";
+                    current_section += "RCRL_VAR_AUTO(" + var.name + ", " + (var.type == "auto" ? "RCRL_EMPTY()" : "const") +
+                                       ", " + var.initializer + ");\n";
                 else
                     current_section += "RCRL_VAR((" + var.type + "), " + var.name + ", " +
                                        (var.initializer.size() ? var.initializer : "RCRL_EMPTY()") + ");\n";
