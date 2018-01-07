@@ -22,7 +22,7 @@
 
 // for vars
 #define RCRL_VAR(type, name, ...)                                                                                           \
-    RCRL_HANDLE_BRACED_VA_ARGS(type)* name##_ptr = []() {                                                                   \
+    RCRL_HANDLE_BRACED_VA_ARGS(type)* rcrl_##name##_ptr = []() {                                                            \
         auto& address = rcrl_get_persistence(#name);                                                                        \
         if(address == nullptr) {                                                                                            \
             address = new RCRL_HANDLE_BRACED_VA_ARGS(type) __VA_ARGS__;                                                     \
@@ -30,7 +30,16 @@
         }                                                                                                                   \
         return static_cast<RCRL_HANDLE_BRACED_VA_ARGS(type)*>(address);                                                     \
     }();                                                                                                                    \
-    RCRL_HANDLE_BRACED_VA_ARGS(type)& name = *name##_ptr
+    RCRL_HANDLE_BRACED_VA_ARGS(type)& name = *rcrl_##name##_ptr
 
-SYMBOL_IMPORT void*& rcrl_get_persistence(const char*);
-SYMBOL_IMPORT void   rcrl_add_deleter(void*, void (*)(void*));
+// for vars with auto type
+#define RCRL_VAR_AUTO(name, ...)                                                                                            \
+    auto rcrl_##name##_type_returner = []() -> auto {                                                                       \
+        auto temp = __VA_ARGS__;                                                                                            \
+        return temp;                                                                                                        \
+    };                                                                                                                      \
+    RCRL_VAR((decltype(rcrl_##name##_type_returner())), name, (__VA_ARGS__))
+
+// the symbols for persistence which the host app should export
+SYMBOL_IMPORT void*& rcrl_get_persistence(const char* var_name);
+SYMBOL_IMPORT void   rcrl_add_deleter(void* address, void (*deleter)(void*));

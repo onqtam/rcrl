@@ -42,7 +42,7 @@ map<string, void*>                   rcrl_persistence;
 vector<pair<void*, void (*)(void*)>> rcrl_deleters;
 
 // for use by the rcrl plugin
-SYMBOL_EXPORT void*& rcrl_get_persistence(const char* var) { return rcrl_persistence[var]; }
+SYMBOL_EXPORT void*& rcrl_get_persistence(const char* var_name) { return rcrl_persistence[var_name]; }
 SYMBOL_EXPORT void   rcrl_add_deleter(void* address, void (*deleter)(void*)) { rcrl_deleters.push_back({address, deleter}); }
 
 namespace rcrl
@@ -367,6 +367,9 @@ vector<VariableDefinition> parse_vars(string text) {
                     int type_begin   = semicolons.size() ? semicolons.back() + 1 : 0;
                     current_var.type = text.substr(type_begin, var_name_begin - type_begin);
                     trim(current_var.type);
+
+					if(current_var.type.size() && current_var.type.back() == '&')
+						throw runtime_error("parse error - references not supported by RCRL");
                 }
 
                 // if we are finalizing the variable - check if there is anything for its initialization
