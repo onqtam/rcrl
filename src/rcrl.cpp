@@ -9,6 +9,7 @@
 #include <cstring> // strlen()
 #include <stdexcept>
 #include <algorithm>
+#include <sstream>
 #include <iostream> // TODO: to remove
 
 #include <third_party/tiny-process-library/process.hpp>
@@ -125,8 +126,11 @@ bool submit_code(string code, Mode mode) {
             auto vars = parse_vars(code);
 
             for(const auto& var : vars) {
-                current_section += "RCRL_VAR((" + var.type + "), " + var.name + ", " +
-                                   (var.initializer.size() ? var.initializer : "RCRL_EMPTY()") + ");\n";
+                if(var.type == "auto" || var.type == "const auto")
+                    current_section += "RCRL_VAR_AUTO(" + var.name + ", " + var.initializer + ");\n";
+                else
+                    current_section += "RCRL_VAR((" + var.type + "), " + var.name + ", " +
+                                       (var.initializer.size() ? var.initializer : "RCRL_EMPTY()") + ");\n";
             }
         } catch(exception& e) {
             output_appender(e.what(), strlen(e.what()));
@@ -218,6 +222,17 @@ void rtrim(string& s) {
 void trim(string& s) {
     ltrim(s);
     rtrim(s);
+}
+
+vector<string> split(const string& str) {
+    vector<string> tokens;
+
+    string       buf;
+    stringstream ss(str);
+    while(ss >> buf)
+        tokens.push_back(buf);
+
+    return tokens;
 }
 
 string remove_comments(const string& text) {
@@ -368,8 +383,16 @@ vector<VariableDefinition> parse_vars(string text) {
                     current_var.type = text.substr(type_begin, var_name_begin - type_begin);
                     trim(current_var.type);
 
-					if(current_var.type.size() && current_var.type.back() == '&')
-						throw runtime_error("parse error - references not supported by RCRL");
+                    if(current_var.type.size() == 0)
+                        throw runtime_error("parse error - couldn't parse type for var");
+                    if(current_var.type.back() == '&')
+                        throw runtime_error("parse error - references not supported by RCRL");
+
+					// detect "auto"/"const auto" types and put them in a canonical form with just 1 space between them
+                    auto tokens = split(current_var.type);
+                    if((tokens.size() == 1 && tokens[0] == "auto") ||
+                       (tokens.size() == 2 && tokens[0] == "const" && tokens[1] == "auto"))
+                        current_var.type = tokens[0] + (tokens.size() == 2 ? string(" ") + tokens[1] : "");
                 }
 
                 // if we are finalizing the variable - check if there is anything for its initialization
