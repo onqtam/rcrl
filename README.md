@@ -20,7 +20,7 @@ TODO:
 - test under linux/osx (currently only compiles)
 - add a PCH through cmake
 - parser: hard problems (not sure about them):
-    - support for using decltype() and constexpr functions in the types of variables
+    - support for '(' and ')' in types - for using decltype(), constexpr functions and even std::function in the types of variables
     - C arrays... - really not sure if this is worth it
 - make a demo video showcasing the project
 - blog about it (with all the notes in my .txt file in google drive)

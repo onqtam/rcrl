@@ -38,9 +38,12 @@ typedef void* RCRL_Dynlib;
 
 using namespace std;
 
+map<string, void*>                   rcrl_persistence;
+vector<pair<void*, void (*)(void*)>> rcrl_deleters;
+
 // for use by the rcrl plugin
-SYMBOL_EXPORT std::map<std::string, void*> rcrl_persistence;
-SYMBOL_EXPORT std::vector<std::pair<void*, void (*)(void*)>> rcrl_deleters;
+SYMBOL_EXPORT void*& rcrl_get_persistence(const char* var) { return rcrl_persistence[var]; }
+SYMBOL_EXPORT void   rcrl_add_deleter(void* address, void (*deleter)(void*)) { rcrl_deleters.push_back({address, deleter}); }
 
 namespace rcrl
 {
@@ -85,7 +88,7 @@ void cleanup_plugins() {
     string bin_folder(RCRL_BIN_FOLDER);
 #ifdef _WIN32
     // replace forward slash with windows style slash
-    std::replace(bin_folder.begin(), bin_folder.end(), '/', '\\');
+    replace(bin_folder.begin(), bin_folder.end(), '/', '\\');
 #endif // _WIN32
 
     if(g_plugins.size())
@@ -104,7 +107,7 @@ bool submit_code(string code, Mode mode) {
         sections.push_back("#include \"rcrl_for_plugin.h\"\n");
     }
 
-    std::replace(code.begin(), code.end(), '\r', '\n');
+    replace(code.begin(), code.end(), '\r', '\n');
     if(code.back() != '\n')
         code.push_back('\n');
 
@@ -156,7 +159,7 @@ bool submit_code(string code, Mode mode) {
     return false;
 }
 
-std::string get_new_compiler_output() {
+string get_new_compiler_output() {
     lock_guard<mutex> lock(compiler_output_mut);
     auto              temp = compiler_output;
     compiler_output.clear();
@@ -204,15 +207,15 @@ void copy_and_load_new_plugin() {
 // == WHAT FOLLOWS IS HORRIBLE CODE FOR PARSING VARIABLES AND THEIR TYPES/INITIALIZERS ==
 // ======================================================================================
 
-void ltrim(std::string& s) {
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) { return !std::isspace(ch); }));
+void ltrim(string& s) {
+    s.erase(s.begin(), find_if(s.begin(), s.end(), [](int ch) { return !isspace(ch); }));
 }
 
-void rtrim(std::string& s) {
-    s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) { return !std::isspace(ch); }).base(), s.end());
+void rtrim(string& s) {
+    s.erase(find_if(s.rbegin(), s.rend(), [](int ch) { return !isspace(ch); }).base(), s.end());
 }
 
-void trim(std::string& s) {
+void trim(string& s) {
     ltrim(s);
     rtrim(s);
 }

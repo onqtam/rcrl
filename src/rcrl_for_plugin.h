@@ -12,32 +12,25 @@
 
 #ifdef _WIN32
 #define SYMBOL_IMPORT __declspec(dllimport)
-#else // _WIN32
+#else
 #define SYMBOL_IMPORT
-#endif // _WIN32
+#endif
 
+// for once
 #define RCRL_ONCE_BEGIN int RCRL_ANONYMOUS(rcrl_anon_) = []() {
 #define RCRL_ONCE_END return 0; }();
 
-#define RCRL_VAR(type, name, ...)                                                               \
-    RCRL_HANDLE_BRACED_VA_ARGS(type)* name##_ptr = []() {                                       \
-        auto& address = rcrl_persistence[#name];                                                \
-        if(address == nullptr) {                                                                \
-            address = new RCRL_HANDLE_BRACED_VA_ARGS(type) __VA_ARGS__;                         \
-            rcrl_deleters.push_back({address, rcrl_deleter<RCRL_HANDLE_BRACED_VA_ARGS(type)>}); \
-        }                                                                                       \
-        return static_cast<RCRL_HANDLE_BRACED_VA_ARGS(type)*>(address);                         \
-    }();                                                                                        \
+// for vars
+#define RCRL_VAR(type, name, ...)                                                                                           \
+    RCRL_HANDLE_BRACED_VA_ARGS(type)* name##_ptr = []() {                                                                   \
+        auto& address = rcrl_get_persistence(#name);                                                                        \
+        if(address == nullptr) {                                                                                            \
+            address = new RCRL_HANDLE_BRACED_VA_ARGS(type) __VA_ARGS__;                                                     \
+            rcrl_add_deleter(address, [](void* ptr) { delete static_cast<RCRL_HANDLE_BRACED_VA_ARGS(type)*>(ptr); });       \
+        }                                                                                                                   \
+        return static_cast<RCRL_HANDLE_BRACED_VA_ARGS(type)*>(address);                                                     \
+    }();                                                                                                                    \
     RCRL_HANDLE_BRACED_VA_ARGS(type)& name = *name##_ptr
 
-#include <map>
-#include <vector>
-#include <string>
-
-template <typename T>
-void rcrl_deleter(void* ptr) {
-    delete static_cast<T*>(ptr);
-}
-
-extern SYMBOL_IMPORT std::map<std::string, void*> rcrl_persistence;
-extern SYMBOL_IMPORT std::vector<std::pair<void*, void (*)(void*)>> rcrl_deleters;
+SYMBOL_IMPORT void*& rcrl_get_persistence(const char*);
+SYMBOL_IMPORT void   rcrl_add_deleter(void*, void (*)(void*));
