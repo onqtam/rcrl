@@ -118,7 +118,7 @@ bool submit_code(string code, Mode mode) {
     if(mode == GLOBAL) {
         current_section += code;
     } else if(mode == ONCE) {
-        current_section += "\nRCRL_ONCE_BEGIN\n";
+        current_section += "RCRL_ONCE_BEGIN\n";
         current_section += code;
         current_section += "RCRL_ONCE_END\n";
     }
@@ -151,16 +151,16 @@ bool submit_code(string code, Mode mode) {
     last_compile_successful = false;
 
     compiler_output.clear();
-    compiler_process =
-            make_unique<TinyProcessLib::Process>("cmake --build " RCRL_BUILD_FOLDER " --target plugin"
+    compiler_process = unique_ptr<TinyProcessLib::Process>(
+            new TinyProcessLib::Process("cmake --build " RCRL_BUILD_FOLDER " --target plugin"
 #ifdef RCRL_CONFIG
-                                                 " --config " RCRL_CONFIG
+                                        " --config " RCRL_CONFIG
 #endif // multi config IDE
 #if defined(RCRL_CONFIG) && defined(_MSC_VER)
-                                                 " -- /verbosity:quiet /consoleloggerparameters:PerformanceSummary"
+                                        " -- /verbosity:quiet /consoleloggerparameters:PerformanceSummary"
 #endif // Visual Studio
-                                                 ,
-                                                 "", output_appender, output_appender);
+                                        ,
+                                        "", output_appender, output_appender));
 
     return false;
 }

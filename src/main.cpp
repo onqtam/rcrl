@@ -85,7 +85,7 @@ int main() {
             ImGui::BeginChild("compiler output", ImVec2(0, text_field_height));
             ImGui::Text("Compiler output");
             compiler_output += rcrl::get_new_compiler_output();
-            ImGui::InputTextMultiline("##compiler_output", compiler_output.data(), compiler_output.size(),
+            ImGui::InputTextMultiline("##compiler_output", (char*)compiler_output.data(), compiler_output.size(),
                                       ImVec2(-1.f, -1.f), ImGuiInputTextFlags_ReadOnly);
             ImGui::EndChild();
 
