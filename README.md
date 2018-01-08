@@ -9,7 +9,6 @@ Read-Compile-Run-Loop - a REPL variant for C++ (much lighter than cling)
 TODO:
 
 - better GUI
-- clean project build from warnings on higher levels
 - document the API - like any specifics for each call
 - redirect the output temporarily while loading the lib
 - something more interesting should happen in the background for the demo

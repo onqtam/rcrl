@@ -292,7 +292,7 @@ vector<VariableDefinition> parse_vars(const string& text) {
             }
         }
 
-        if(!in_string && !in_char || just_enterned_char_string) {
+        if((!in_string && !in_char) || just_enterned_char_string) {
             // if the current char is not a whitespace, but the previous one was - mark the end of a whitespace block
             if(!isspace(c) && (i == 0 || isspace(text[i - 1]))) {
                 in_whitespace = false;

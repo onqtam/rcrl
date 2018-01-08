@@ -41,9 +41,21 @@ add_executable(host_app
 # imgui integration
     src/third_party/imgui/examples/opengl2_example/imgui_impl_glfw.cpp
 )
+
 # enable exports so the plugin can link to the executable
 set_target_properties(host_app PROPERTIES ENABLE_EXPORTS ON)
+
+# add an include dir for ease of use
 target_include_directories(host_app PUBLIC src)
+
+# enable warnings
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    # TODO: -Weverything for clang
+    target_compile_options(host_app PRIVATE -Wall -Wextra)
+else()
+    target_compile_options(host_app PRIVATE /W4)
+endif()
+
 # defines needed for easier RCRL integration
 target_compile_definitions(host_app PRIVATE "RCRL_PLUGIN_FILE=\"${plugin_file}\"")
 target_compile_definitions(host_app PRIVATE "RCRL_BUILD_FOLDER=\"${PROJECT_BINARY_DIR}\"")
