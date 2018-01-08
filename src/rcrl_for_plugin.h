@@ -13,9 +13,9 @@
 #define RCRL_HANDLE_BRACED_VA_ARGS(expr) RCRL_STRIP_PARENS(RCRL_EXPAND_VA_ARGS expr)
 
 #ifdef _WIN32
-#define SYMBOL_IMPORT __declspec(dllimport)
+#define RCRL_SYMBOL_IMPORT __declspec(dllimport)
 #else
-#define SYMBOL_IMPORT
+#define RCRL_SYMBOL_IMPORT
 #endif
 
 // for once
@@ -43,5 +43,5 @@
     RCRL_VAR((constness decltype(rcrl_##name##_type_returner())), name, __VA_ARGS__)
 
 // the symbols for persistence which the host app should export
-SYMBOL_IMPORT void*& rcrl_get_persistence(const char* var_name);
-SYMBOL_IMPORT void   rcrl_add_deleter(void* address, void (*deleter)(void*));
+RCRL_SYMBOL_IMPORT void*& rcrl_get_persistence(const char* var_name);
+RCRL_SYMBOL_IMPORT void   rcrl_add_deleter(void* address, void (*deleter)(void*));

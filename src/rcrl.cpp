@@ -1,7 +1,5 @@
 #include "rcrl.h"
 
-#include "visibility.h"
-
 #include <cassert>
 #include <fstream>
 #include <map>
@@ -13,6 +11,12 @@
 #include <iostream> // TODO: to remove
 
 #include <third_party/tiny-process-library/process.hpp>
+
+#ifdef _WIN32
+#define SYMBOL_EXPORT __declspec(dllexport)
+#else
+#define SYMBOL_EXPORT __attribute__((visibility("default")))
+#endif
 
 #ifdef _WIN32
 
