@@ -329,7 +329,8 @@ vector<VariableDefinition> parse_vars(string text) {
 
     bool just_enterned_char_string = false;
 
-    vector<pair<char, int>> braces; // the current active stack of braces
+    vector<pair<char, int>> braces;                       // the current active stack of braces
+    int                     opened_template_brackets = 0; // the current active stack of template <> braces
 
     vector<int> semicolons;        // the positions of all semicolons
     vector<int> whitespace_begins; // the positions of all whitespace beginings
@@ -372,10 +373,26 @@ vector<VariableDefinition> parse_vars(string text) {
 
         // proceed with parsing variable definitions
         if(!in_string && !in_char) {
-            if(braces.size() == 0 && (c == ';' || c == '(' || c == '{' || c == '=')) {
+            if(braces.size() == 0 && opened_template_brackets == 0 && (c == ';' || c == '(' || c == '{' || c == '=')) {
+                // detect decltype
+                bool opening_decltype = false;
+                if(c == '(') {
+                    auto last_decltype_pos = text.rfind("decltype", i);
+                    if(last_decltype_pos != std::string::npos) {
+                        // check to see if there are any non-whitespace characters between 'decltype' and the opening brace '('
+                        bool only_whitespace_after_decltype = true;
+                        for(auto k = last_decltype_pos + strlen("decltype"); k < i; ++k)
+                            if(!isspace(text[k]))
+                                only_whitespace_after_decltype = false;
+
+                        if(only_whitespace_after_decltype)
+                            opening_decltype = true;
+                    }
+                }
+
                 // if after the name of a variable
-                if(!in_var) {
-                    if(whitespace_ends.size() == 0)
+                if(!in_var && !opening_decltype) {
+                    if(whitespace_ends.size() < 2)
                         throw runtime_error("parse error - expected <type> <name>... with atleast 1 space in between");
 
                     auto var_name_begin  = whitespace_ends.back();
@@ -394,7 +411,7 @@ vector<VariableDefinition> parse_vars(string text) {
                     if(current_var.type.back() == '&')
                         throw runtime_error("parse error - references not supported by RCRL");
 
-					// detect "auto"/"const auto" types and put them in a canonical form with just 1 space between them
+                    // detect "auto"/"const auto" types and put them in a canonical form with just 1 space between them
                     auto tokens = split(current_var.type);
                     if((tokens.size() == 1 && tokens[0] == "auto") ||
                        (tokens.size() == 2 && tokens[0] == "const" && tokens[1] == "auto"))
@@ -407,10 +424,10 @@ vector<VariableDefinition> parse_vars(string text) {
                     trim(current_var.initializer);
                     if(current_var.initializer.size() && current_var.initializer.front() == '=') {
                         current_var.initializer.erase(current_var.initializer.begin());
-						current_var.has_assignment = true;
+                        current_var.has_assignment = true;
                         trim(current_var.initializer);
-						if(current_var.initializer.size() == 0)
-							throw runtime_error("parse error - no initializer code between '=' and ';'");
+                        if(current_var.initializer.size() == 0)
+                            throw runtime_error("parse error - no initializer code between '=' and ';'");
                     }
 
                     if(current_var.initializer.size() && current_var.initializer.front() != '(' &&
@@ -426,12 +443,22 @@ vector<VariableDefinition> parse_vars(string text) {
                     // var parsed
                     out.push_back(current_var);
 
-					// clear state
-                    in_var = false;
-					current_var = VariableDefinition();
+                    // clear state
+                    in_var      = false;
+                    current_var = VariableDefinition();
                 }
             }
 
+            // track template brackets only if not in any other braces
+            if(braces.size() == 0 && (c == '<' || c == '>')) {
+                if(c == '<') {
+                    ++opened_template_brackets;
+                } else {
+                    if(opened_template_brackets == 0)
+                        throw runtime_error("parse error - template opening/closing bracket mismatch");
+                    --opened_template_brackets;
+                }
+            }
             if(c == '(' || c == '[' || c == '{') {
                 braces.push_back({c, i});
             }
@@ -443,7 +470,7 @@ vector<VariableDefinition> parse_vars(string text) {
                     throw runtime_error("parse error - closing brace mismatch");
                 braces.pop_back();
             }
-            if(c == ';') {
+            if(braces.size() == 0 && c == ';') {
                 semicolons.push_back(i);
             }
         }

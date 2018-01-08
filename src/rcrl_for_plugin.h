@@ -1,6 +1,15 @@
 #pragma once
 
+// TODO: remove these
 #include <initializer_list>
+
+#include <iostream>
+#include <vector>
+#include <memory>
+#include <string>
+#include <map>
+#include <functional>
+using namespace std;
 
 #define RCRL_EMPTY()
 
