@@ -8,7 +8,6 @@ Read-Compile-Run-Loop - a REPL variant for C++ (much lighter than cling)
 
 TODO:
 
-- change between the 3 section types with comments
 - better GUI
 - clean project build from warnings on higher levels
 - document the API - like any specifics for each call

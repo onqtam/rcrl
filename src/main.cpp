@@ -99,8 +99,9 @@ int main() {
             ImGui::SameLine();
             // bottom right part
             ImGui::BeginChild("program output", ImVec2(0, text_field_height));
-            static rcrl::Mode mode = rcrl::GLOBAL;
-            ImGui::RadioButton("global", (int*)&mode, rcrl::GLOBAL);
+            static rcrl::Mode mode = rcrl::FROM_COMMENTS;
+			ImGui::RadioButton("from comments", (int*)&mode, rcrl::FROM_COMMENTS);
+			ImGui::RadioButton("global", (int*)&mode, rcrl::GLOBAL);
             ImGui::RadioButton("vars", (int*)&mode, rcrl::VARS);
             ImGui::RadioButton("once", (int*)&mode, rcrl::ONCE);
             auto compile = ImGui::Button("Compile and run");

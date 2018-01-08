@@ -7,6 +7,7 @@ namespace rcrl
 {
 enum Mode
 {
+	FROM_COMMENTS,
     GLOBAL,
     VARS,
     ONCE

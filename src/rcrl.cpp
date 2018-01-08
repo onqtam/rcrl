@@ -13,18 +13,10 @@
 #include <third_party/tiny-process-library/process.hpp>
 
 #ifdef _WIN32
-#define SYMBOL_EXPORT __declspec(dllexport)
-#else
-#define SYMBOL_EXPORT __attribute__((visibility("default")))
-#endif
-
-#ifdef _WIN32
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-
 typedef HMODULE RCRL_Dynlib;
-
 #define RDRL_LoadDynlib(lib) LoadLibrary(lib)
 #define RCRL_CloseDynlib FreeLibrary
 #define RCRL_CopyDynlib(src, dst) CopyFile(src, dst, false)
@@ -32,13 +24,17 @@ typedef HMODULE RCRL_Dynlib;
 #else
 
 #include <dlfcn.h>
-
 typedef void* RCRL_Dynlib;
-
 #define RDRL_LoadDynlib(lib) dlopen(lib, RTLD_NOW)
 #define RCRL_CloseDynlib dlclose
 #define RCRL_CopyDynlib(src, dst) (!system((string("cp ") + RCRL_BIN_FOLDER + src + " " + RCRL_BIN_FOLDER + dst).c_str()))
 
+#endif
+
+#ifdef _WIN32
+#define RCRL_SYMBOL_EXPORT __declspec(dllexport)
+#else
+#define RCRL_SYMBOL_EXPORT __attribute__((visibility("default")))
 #endif
 
 using namespace std;
@@ -47,8 +43,10 @@ map<string, void*>                   rcrl_persistence;
 vector<pair<void*, void (*)(void*)>> rcrl_deleters;
 
 // for use by the rcrl plugin
-SYMBOL_EXPORT void*& rcrl_get_persistence(const char* var_name) { return rcrl_persistence[var_name]; }
-SYMBOL_EXPORT void   rcrl_add_deleter(void* address, void (*deleter)(void*)) { rcrl_deleters.push_back({address, deleter}); }
+RCRL_SYMBOL_EXPORT void*& rcrl_get_persistence(const char* var_name) { return rcrl_persistence[var_name]; }
+RCRL_SYMBOL_EXPORT void   rcrl_add_deleter(void* address, void (*deleter)(void*)) {
+    rcrl_deleters.push_back({address, deleter});
+}
 
 namespace rcrl
 {
@@ -70,10 +68,9 @@ void output_appender(const char* bytes, size_t n) {
     compiler_output += string(bytes, n);
 }
 
-bool           last_compile_successful = false;
-vector<string> sections;
-string         current_section;
-Mode           current_section_mode;
+bool                       last_compile_successful = false;
+vector<string>             compiled_sections;
+vector<pair<string, Mode>> uncompiled_sections;
 
 void cleanup_plugins() {
     assert(!is_compiling());
@@ -84,7 +81,7 @@ void cleanup_plugins() {
     rcrl_deleters.clear();
 
     // clear the code sections and pointers to globals
-    sections.clear();
+    compiled_sections.clear();
     rcrl_persistence.clear();
 
     // close the plugins in reverse order
@@ -102,53 +99,74 @@ void cleanup_plugins() {
     g_plugins.clear();
 }
 
-vector<VariableDefinition> parse_vars(string text);
+// removes comments from the string and returns a list of parsed beginings of sections - one of the 3: global/vars/once
+vector<pair<size_t, Mode>> remove_comments(string& out);
+// parses variables from code - for 'vars' sections
+vector<VariableDefinition> parse_vars(const string& text);
 
 bool submit_code(string code, Mode mode) {
     assert(!is_compiling());
     assert(code.size());
 
     // if this is the first piece of code submitted
-    if(sections.size() == 0) {
-        sections.push_back("#include \"rcrl_for_plugin.h\"\n");
-    }
+    if(compiled_sections.size() == 0)
+        compiled_sections.push_back("#include \"rcrl_for_plugin.h\"\n");
 
+    // fix line endings
     replace(code.begin(), code.end(), '\r', '\n');
-    if(code.back() != '\n')
-        code.push_back('\n');
 
-    current_section_mode = mode;
-    current_section.clear();
-    if(mode == GLOBAL) {
-        current_section += code;
-    } else if(mode == ONCE) {
-        current_section += "RCRL_ONCE_BEGIN\n";
-        current_section += code;
-        current_section += "RCRL_ONCE_END\n";
+    // figure out the sections
+    auto section_beginings = remove_comments(code);
+    if(mode != FROM_COMMENTS) {
+        section_beginings.clear();
+        section_beginings.push_back({0, mode});
     }
-    if(mode == VARS) {
-        try {
-            auto vars = parse_vars(code);
 
-            for(const auto& var : vars) {
-                if(var.type == "auto" || var.type == "const auto")
-                    current_section += "RCRL_VAR_AUTO(" + var.name + ", " + (var.type == "auto" ? "RCRL_EMPTY()" : "const") +
-                                       ", " + (var.has_assignment ? "=" : "RCRL_EMPTY()") + ", " + var.initializer + ");\n";
-                else
-                    current_section += "RCRL_VAR((" + var.type + "), " + var.name + ", " +
-                                       (var.initializer.size() ? var.initializer : "RCRL_EMPTY()") + ");\n";
+    // fill the current sections of code for compilation
+    uncompiled_sections.clear();
+    for(auto it = section_beginings.begin(); it != section_beginings.end(); ++it) {
+        // get the code
+        string section_code = code.substr(
+                it->first, (it + 1 == section_beginings.end() ? code.size() - it->first : (it + 1)->first - it->first));
+
+        // for nicer output
+        if(section_code.back() != '\n')
+            section_code.push_back('\n');
+
+        if(it->second == ONCE)
+            section_code = "RCRL_ONCE_BEGIN\n" + section_code + "RCRL_ONCE_END\n";
+
+        if(it->second == VARS) {
+            try {
+                auto vars = parse_vars(section_code);
+                section_code.clear();
+
+                for(const auto& var : vars) {
+                    if(var.type == "auto" || var.type == "const auto")
+                        section_code += "RCRL_VAR_AUTO(" + var.name + ", " +
+                                        (var.type == "auto" ? "RCRL_EMPTY()" : "const") + ", " +
+                                        (var.has_assignment ? "=" : "RCRL_EMPTY()") + ", " + var.initializer + ");\n";
+                    else
+                        section_code += "RCRL_VAR((" + var.type + "), " + var.name + ", " +
+                                        (var.initializer.size() ? var.initializer : "RCRL_EMPTY()") + ");\n";
+                }
+            } catch(exception& e) {
+                output_appender(e.what(), strlen(e.what()));
+                uncompiled_sections.clear();
+                return true;
             }
-        } catch(exception& e) {
-            output_appender(e.what(), strlen(e.what()));
-            return true;
         }
+
+        // push the section code to the list of uncompiled ones
+        uncompiled_sections.push_back({section_code, it->second});
     }
 
     // concatenate all the sections to make the source file to be compiled
     ofstream myfile(RCRL_PLUGIN_FILE);
-    for(auto& section : sections)
+    for(const auto& section : compiled_sections)
         myfile << section;
-    myfile << current_section;
+    for(const auto& section : uncompiled_sections)
+        myfile << section.first;
     myfile.close();
 
     // mark the successful compilation flag as false
@@ -196,9 +214,9 @@ void copy_and_load_new_plugin() {
 
     last_compile_successful = false; // shouldn't call this function twice in a row without compiling anything in between
 
-    if(current_section_mode != ONCE) {
-        sections.push_back(current_section);
-    }
+    for(const auto& section : uncompiled_sections)
+        if(section.second != ONCE)
+            compiled_sections.push_back(section.first);
 
     // copy the plugin
     auto       name_copied = string(RCRL_BIN_FOLDER) + "plugin_" + to_string(g_plugins.size()) + RCRL_EXTENSION;
@@ -241,8 +259,11 @@ vector<string> split(const string& str) {
     return tokens;
 }
 
-string remove_comments(const string& text) {
-    string out(text);
+vector<pair<size_t, Mode>> remove_comments(string& out) {
+    const string text(out);
+
+    vector<pair<size_t, Mode>> section_starts;
+    section_starts.push_back({0, ONCE}); // this is the default input method
 
     bool in_char                = false; // 'c'
     bool in_string              = false; // "str"
@@ -307,6 +328,26 @@ string remove_comments(const string& text) {
         if(c == '\n') {
             if(in_single_line_comment && text[i - 1] != '\\') {
                 in_single_line_comment = false;
+
+                // search for RCRL directives
+                auto directive_finder = [&](const std::string& look_for) {
+                    auto global_last_pos = text.rfind(look_for, i);
+                    if(global_last_pos != std::string::npos) {
+                        for(auto k = global_last_pos + look_for.size(); k < i; ++k)
+                            if(!isspace(text[k]))
+                                return false;
+                        return true;
+                    }
+                    return false;
+                };
+
+                if(directive_finder("global"))
+                    section_starts.push_back({i, GLOBAL});
+                if(directive_finder("vars"))
+                    section_starts.push_back({i, VARS});
+                if(directive_finder("once"))
+                    section_starts.push_back({i, ONCE});
+
                 continue;
             }
         }
@@ -317,10 +358,10 @@ string remove_comments(const string& text) {
         }
     }
 
-    return out;
+    return section_starts;
 }
 
-vector<VariableDefinition> parse_vars(string text) {
+vector<VariableDefinition> parse_vars(const string& text) {
     vector<VariableDefinition> out;
 
     bool in_char       = false; // 'c'
@@ -335,8 +376,6 @@ vector<VariableDefinition> parse_vars(string text) {
     vector<int> semicolons;        // the positions of all semicolons
     vector<int> whitespace_begins; // the positions of all whitespace beginings
     vector<int> whitespace_ends;   // the positions of all whitespace endings
-
-    text = remove_comments(text);
 
     VariableDefinition current_var;
     bool               in_var               = false;
