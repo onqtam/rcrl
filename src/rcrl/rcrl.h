@@ -1,13 +1,12 @@
 #pragma once
 
-#include <vector>
 #include <string>
 
 namespace rcrl
 {
 enum Mode
 {
-	FROM_COMMENTS,
+    FROM_COMMENTS,
     GLOBAL,
     VARS,
     ONCE

@@ -64,7 +64,18 @@ before_script:
   - git submodule update --init --recursive
 
 script:
-  - mkdir build
-  - cd build
-  - cmake ..
+  # -g -fno-omit-frame-pointer -fsanitize=address,undefined
+  # debug
+  - mkdir build_debug
+  - cd build_debug
+  - cmake -DCMAKE_BUILD_TYPE=Debug ..
   - cmake --build .
+  - ctest --output-on-failure
+  - cd ..
+  # release
+  - mkdir build_release
+  - cd build_release
+  - cmake -DCMAKE_BUILD_TYPE=Release ..
+  - cmake --build .
+  - ctest --output-on-failure
+  - cd ..

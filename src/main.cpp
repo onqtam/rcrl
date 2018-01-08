@@ -1,5 +1,5 @@
 #include "host_app.h"
-#include "rcrl.h"
+#include "rcrl/rcrl.h"
 
 #include <GLFW/glfw3.h>
 #include <third_party/ImGuiColorTextEdit/TextEditor.h>
@@ -52,6 +52,19 @@ int main() {
     TextEditor editor;
     editor.SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus());
 
+    // set initial code
+    editor.SetText(
+            R"raw(cout << "hello!\n";
+// global
+int f() { return 42; }
+// vars
+int a = f();
+// once
+a++;
+// once
+cout << a << endl;
+)raw");
+
     // holds the compiler output
     string compiler_output;
 
@@ -100,14 +113,14 @@ int main() {
             // bottom right part
             ImGui::BeginChild("program output", ImVec2(0, text_field_height));
             static rcrl::Mode mode = rcrl::FROM_COMMENTS;
-			ImGui::RadioButton("from comments", (int*)&mode, rcrl::FROM_COMMENTS);
-			ImGui::RadioButton("global", (int*)&mode, rcrl::GLOBAL);
+            ImGui::RadioButton("from comments", (int*)&mode, rcrl::FROM_COMMENTS);
+            ImGui::RadioButton("global", (int*)&mode, rcrl::GLOBAL);
             ImGui::RadioButton("vars", (int*)&mode, rcrl::VARS);
             ImGui::RadioButton("once", (int*)&mode, rcrl::ONCE);
             auto compile = ImGui::Button("Compile and run");
             if(ImGui::Button("Cleanup") && !rcrl::is_compiling()) {
                 rcrl::cleanup_plugins();
-				compiler_output.clear();
+                compiler_output.clear();
                 history.SetText("\r");
             }
             //ImGui::Text("Program output");
@@ -122,10 +135,10 @@ int main() {
                 compiler_output.clear();
 
                 // submit to the rcrl engine
-				if (!rcrl::submit_code(editor.GetText(), mode)) {
-					// make the editor code untouchable while compiling
-					editor.SetReadOnly(true);
-				}
+                if(!rcrl::submit_code(editor.GetText(), mode)) {
+                    // make the editor code untouchable while compiling
+                    editor.SetReadOnly(true);
+                }
             }
         }
         ImGui::End();

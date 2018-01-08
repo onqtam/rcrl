@@ -28,13 +28,17 @@ file(WRITE ${plugin_file} "")
 ####################################################################################################
 
 add_executable(host_app
+# host app sources
     src/main.cpp
     src/host_app.cpp
     src/host_app.h
-    src/rcrl.cpp
-    src/rcrl.h
-    src/rcrl_for_plugin.h
-    src/visibility.h
+# rcrl sources
+    src/rcrl/rcrl.h
+    src/rcrl/rcrl.cpp
+    src/rcrl/rcrl_parser.h
+    src/rcrl/rcrl_parser.cpp
+    src/rcrl/rcrl_for_plugin.h
+# imgui integration
     src/third_party/imgui/examples/opengl2_example/imgui_impl_glfw.cpp
 )
 # enable exports so the plugin can link to the executable
@@ -106,3 +110,14 @@ set_target_properties(tiny-process-library PROPERTIES FOLDER "third_party")
 # link host app to third party libs
 find_package(OpenGL REQUIRED)
 target_link_libraries(host_app PRIVATE imgui glfw ImGuiColorTextEdit tiny-process-library ${OPENGL_LIBRARIES})
+
+####################################################################################################
+# tests
+####################################################################################################
+
+option(RCRL_WITH_TESTS "Build tests for RCRL" ON)
+if(RCRL_WITH_TESTS)
+    enable_testing()
+    add_executable(rcrl_tests src/rcrl/rcrl_parser.cpp tests/tests.cpp)
+    add_test(NAME rcrl_tests COMMAND rcrl_tests)
+endif()
