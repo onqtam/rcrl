@@ -25,7 +25,7 @@ typedef HMODULE RCRL_Dynlib;
 #define RCRL_CloseDynlib FreeLibrary
 #define RCRL_CopyDynlib(src, dst) CopyFile(src, dst, false)
 
-#else // _WIN32
+#else
 
 #include <dlfcn.h>
 
@@ -35,7 +35,7 @@ typedef void* RCRL_Dynlib;
 #define RCRL_CloseDynlib dlclose
 #define RCRL_CopyDynlib(src, dst) (!system((string("cp ") + RCRL_BIN_FOLDER + src + " " + RCRL_BIN_FOLDER + dst).c_str()))
 
-#endif // _WIN32
+#endif
 
 using namespace std;
 
