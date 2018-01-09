@@ -21,6 +21,7 @@ typedef HMODULE RCRL_Dynlib;
 #define RDRL_LoadDynlib(lib) LoadLibrary(lib)
 #define RCRL_CloseDynlib FreeLibrary
 #define RCRL_CopyDynlib(src, dst) CopyFile(src, dst, false)
+#define RCRL_System_Delete "del /Q "
 
 #else
 
@@ -29,6 +30,7 @@ typedef void* RCRL_Dynlib;
 #define RDRL_LoadDynlib(lib) dlopen(lib, RTLD_NOW)
 #define RCRL_CloseDynlib dlclose
 #define RCRL_CopyDynlib(src, dst) (!system((string("cp ") + src + " " + dst).c_str()))
+#define RCRL_System_Delete "rm "
 
 #endif
 
@@ -88,7 +90,7 @@ void cleanup_plugins() {
 #endif // _WIN32
 
     if(g_plugins.size())
-        system((string("del ") + bin_folder + RCRL_PLUGIN_PROJECT "_*" RCRL_EXTENSION " /Q").c_str());
+        system((string(RCRL_System_Delete) + bin_folder + RCRL_PLUGIN_PROJECT "_*" RCRL_EXTENSION).c_str());
     g_plugins.clear();
 }
 
