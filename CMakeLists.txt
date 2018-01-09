@@ -80,6 +80,10 @@ target_link_libraries(plugin host_app)
 set_target_properties(plugin PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD 1)
 # no 'lib' prefix for some compilers/platforms - simplifies my code
 set_target_properties(plugin PROPERTIES PREFIX "")
+if(APPLE)
+    # weird flags to make it link to the executable - see this: https://stackoverflow.com/questions/48176641
+    set_target_properties(plugin PROPERTIES LINK_FLAGS "-undefined dynamic_lookup -Wl,-no_pie -Wl,-search_paths_first")
+endif()
 if(MSVC)
     # we don't want .pdb files for the plugin because when we are within Visual Studio and debugging the application it locks
     # the .pdb for the original .dll and subsequent compiles fail even though we have loaded copies of the original .dll
