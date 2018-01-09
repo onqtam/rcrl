@@ -58,6 +58,7 @@ endif()
 
 # defines needed for easier RCRL integration
 target_compile_definitions(host_app PRIVATE "RCRL_PLUGIN_FILE=\"${plugin_file}\"")
+target_compile_definitions(host_app PRIVATE "RCRL_PLUGIN_PROJECT=\"plugin\"")
 target_compile_definitions(host_app PRIVATE "RCRL_BUILD_FOLDER=\"${PROJECT_BINARY_DIR}\"")
 target_compile_definitions(host_app PRIVATE "RCRL_BIN_FOLDER=\"$<TARGET_FILE_DIR:host_app>/\"")
 target_compile_definitions(host_app PRIVATE "RCRL_HOST_APP")
@@ -129,7 +130,5 @@ target_link_libraries(host_app PRIVATE imgui glfw ImGuiColorTextEdit tiny-proces
 
 option(RCRL_WITH_TESTS "Build tests for RCRL" ON)
 if(RCRL_WITH_TESTS)
-    enable_testing()
-    add_executable(rcrl_tests src/rcrl/rcrl_parser.cpp tests/tests.cpp)
-    add_test(NAME rcrl_tests COMMAND rcrl_tests)
+	add_subdirectory(tests)
 endif()

@@ -88,7 +88,7 @@ void cleanup_plugins() {
 #endif // _WIN32
 
     if(g_plugins.size())
-        system((string("del ") + bin_folder + "plugin_*" RCRL_EXTENSION " /Q").c_str());
+        system((string("del ") + bin_folder + RCRL_PLUGIN_PROJECT "_*" RCRL_EXTENSION " /Q").c_str());
     g_plugins.clear();
 }
 
@@ -162,7 +162,7 @@ bool submit_code(string code, Mode mode) {
 
     compiler_output.clear();
     compiler_process = unique_ptr<TinyProcessLib::Process>(
-            new TinyProcessLib::Process("cmake --build " RCRL_BUILD_FOLDER " --target plugin"
+            new TinyProcessLib::Process("cmake --build " RCRL_BUILD_FOLDER " --target " RCRL_PLUGIN_PROJECT
 #ifdef RCRL_CONFIG
                                         " --config " RCRL_CONFIG
 #endif // multi config IDE
@@ -207,8 +207,8 @@ void copy_and_load_new_plugin() {
             compiled_sections.push_back(section.first);
 
     // copy the plugin
-    auto       name_copied = string(RCRL_BIN_FOLDER) + "plugin_" + to_string(g_plugins.size()) + RCRL_EXTENSION;
-    const auto copy_res = RCRL_CopyDynlib((string(RCRL_BIN_FOLDER) + "plugin" RCRL_EXTENSION).c_str(), name_copied.c_str());
+    auto       name_copied = string(RCRL_BIN_FOLDER) + RCRL_PLUGIN_PROJECT "_" + to_string(g_plugins.size()) + RCRL_EXTENSION;
+    const auto copy_res = RCRL_CopyDynlib((string(RCRL_BIN_FOLDER) + RCRL_PLUGIN_PROJECT RCRL_EXTENSION).c_str(), name_copied.c_str());
     assert(copy_res);
 
     // load the plugin
