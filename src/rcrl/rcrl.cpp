@@ -28,7 +28,7 @@ typedef HMODULE RCRL_Dynlib;
 typedef void* RCRL_Dynlib;
 #define RDRL_LoadDynlib(lib) dlopen(lib, RTLD_NOW)
 #define RCRL_CloseDynlib dlclose
-#define RCRL_CopyDynlib(src, dst) (!system((string("cp ") + RCRL_BIN_FOLDER + src + " " + RCRL_BIN_FOLDER + dst).c_str()))
+#define RCRL_CopyDynlib(src, dst) (!system((string("cp ") + src + " " + dst).c_str()))
 
 #endif
 
