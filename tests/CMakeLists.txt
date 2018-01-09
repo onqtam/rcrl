@@ -3,8 +3,6 @@
 # - tiny-process-library is present
 # - the plugin_file variable is defined
 
-enable_testing()
-
 # parser tests
 add_executable(rcrl_parser_tests ../src/rcrl/rcrl_parser.cpp parser_tests.cpp)
 add_test(NAME rcrl_parser_tests COMMAND rcrl_parser_tests)

@@ -130,5 +130,6 @@ target_link_libraries(host_app PRIVATE imgui glfw ImGuiColorTextEdit tiny-proces
 
 option(RCRL_WITH_TESTS "Build tests for RCRL" ON)
 if(RCRL_WITH_TESTS)
+    enable_testing()
 	add_subdirectory(tests)
 endif()
