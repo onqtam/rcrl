@@ -37,7 +37,7 @@ set_target_properties(test_plugin PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD 1)
 set_target_properties(test_plugin PROPERTIES PREFIX "")
 if(APPLE)
     # weird flags to make it link to the executable - see this: https://stackoverflow.com/questions/48176641
-    set_target_properties(test_plugin PROPERTIES LINK_FLAGS "-undefined dynamic_lookup -Wl,-no_pie -Wl,-search_paths_first")
+    set_target_properties(test_plugin PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
 endif()
 if(MSVC)
 	set_target_properties(test_plugin PROPERTIES LINK_FLAGS /DEBUG:NONE)
