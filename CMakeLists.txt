@@ -61,11 +61,13 @@ target_compile_definitions(host_app PRIVATE "RCRL_PLUGIN_FILE=\"${plugin_file}\"
 target_compile_definitions(host_app PRIVATE "RCRL_PLUGIN_PROJECT=\"plugin\"")
 target_compile_definitions(host_app PRIVATE "RCRL_BUILD_FOLDER=\"${PROJECT_BINARY_DIR}\"")
 target_compile_definitions(host_app PRIVATE "RCRL_BIN_FOLDER=\"$<TARGET_FILE_DIR:host_app>/\"")
-target_compile_definitions(host_app PRIVATE "RCRL_HOST_APP")
 target_compile_definitions(host_app PRIVATE "RCRL_EXTENSION=\"${CMAKE_SHARED_LIBRARY_SUFFIX}\"")
 if(${CMAKE_GENERATOR} MATCHES "Visual Studio" OR ${CMAKE_GENERATOR} MATCHES "Xcode")
     target_compile_definitions(host_app PRIVATE "RCRL_CONFIG=\"$<CONFIG>\"")
 endif()
+
+# so the host app exports symbols from its headers
+target_compile_definitions(host_app PRIVATE "HOST_APP")
 
 ####################################################################################################
 # the plugin that will be used for RCRL

@@ -8,7 +8,7 @@
 #define SYMBOL_IMPORT
 #endif
 
-#ifdef RCRL_HOST_APP
+#ifdef HOST_APP
 #define HOST_API SYMBOL_EXPORT
 #else
 #define HOST_API SYMBOL_IMPORT
