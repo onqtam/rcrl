@@ -22,7 +22,7 @@ endif()
 target_link_libraries(rcrl_compiler_tests PRIVATE tiny-process-library)
 # link to dl for dlopen() and dlclose()
 if(UNIX AND NOT APPLE)
-    target_link_libraries(host_app PRIVATE dl)
+    target_link_libraries(rcrl_compiler_tests PRIVATE dl)
 endif()
 
 # export symbols from executable
