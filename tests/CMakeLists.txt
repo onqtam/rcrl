@@ -20,6 +20,11 @@ if(${CMAKE_GENERATOR} MATCHES "Visual Studio" OR ${CMAKE_GENERATOR} MATCHES "Xco
 endif()
 # link to process library
 target_link_libraries(rcrl_compiler_tests PRIVATE tiny-process-library)
+# link to dl for dlopen() and dlclose()
+if(UNIX AND NOT APPLE)
+    target_link_libraries(host_app PRIVATE dl)
+endif()
+
 # export symbols from executable
 set_target_properties(rcrl_compiler_tests PROPERTIES ENABLE_EXPORTS ON)
 # add include directory
