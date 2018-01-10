@@ -109,11 +109,18 @@ vector<pair<size_t, Mode>> remove_comments(string& out) {
 
                 // search for RCRL directives
                 auto directive_finder = [&](const string& look_for) {
-                    auto global_last_pos = text.rfind(look_for, i);
-                    if(global_last_pos != string::npos) {
-                        for(auto k = global_last_pos + look_for.size(); k < i; ++k)
+                    auto directive_last_pos = text.rfind(look_for, i);
+                    if(directive_last_pos != string::npos) {
+						// check that there are is only whitespace after the directive
+                        for(auto k = directive_last_pos + look_for.size(); k < i; ++k)
                             if(!isspace(text[k]))
                                 return false;
+
+						// check that there are is only whitespace before the directive
+						for(auto k = directive_last_pos - 1; text[k] != '/'; --k)
+							if(!isspace(text[k]))
+								return false;
+
                         return true;
                     }
                     return false;
