@@ -1,3 +1,7 @@
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include "rcrl.h"
 #include "rcrl_parser.h"
 
@@ -90,7 +94,7 @@ void cleanup_plugins() {
 #endif // _WIN32
 
     if(g_plugins.size())
-        system((string(RCRL_System_Delete) + bin_folder + RCRL_PLUGIN_PROJECT "_*" RCRL_EXTENSION).c_str());
+        system((string(RCRL_System_Delete) + bin_folder + RCRL_PLUGIN_NAME "_*" RCRL_EXTENSION).c_str());
     g_plugins.clear();
 }
 
@@ -164,7 +168,7 @@ bool submit_code(string code, Mode mode) {
 
     compiler_output.clear();
     compiler_process = unique_ptr<TinyProcessLib::Process>(
-            new TinyProcessLib::Process("cmake --build " RCRL_BUILD_FOLDER " --target " RCRL_PLUGIN_PROJECT
+            new TinyProcessLib::Process("cmake --build " RCRL_BUILD_FOLDER " --target " RCRL_PLUGIN_NAME
 #ifdef RCRL_CONFIG
                                         " --config " RCRL_CONFIG
 #endif // multi config IDE
@@ -198,7 +202,7 @@ bool try_get_exit_status_from_compile(int& exitcode) {
     return false;
 }
 
-void copy_and_load_new_plugin() {
+string copy_and_load_new_plugin(bool redirect_stdout) {
     assert(!is_compiling());
     assert(last_compile_successful);
 
@@ -209,9 +213,13 @@ void copy_and_load_new_plugin() {
             compiled_sections.push_back(section.first);
 
     // copy the plugin
-    auto       name_copied = string(RCRL_BIN_FOLDER) + RCRL_PLUGIN_PROJECT "_" + to_string(g_plugins.size()) + RCRL_EXTENSION;
-    const auto copy_res = RCRL_CopyDynlib((string(RCRL_BIN_FOLDER) + RCRL_PLUGIN_PROJECT RCRL_EXTENSION).c_str(), name_copied.c_str());
+    auto       name_copied = string(RCRL_BIN_FOLDER) + RCRL_PLUGIN_NAME "_" + to_string(g_plugins.size()) + RCRL_EXTENSION;
+    const auto copy_res =
+            RCRL_CopyDynlib((string(RCRL_BIN_FOLDER) + RCRL_PLUGIN_NAME RCRL_EXTENSION).c_str(), name_copied.c_str());
     assert(copy_res);
+
+    if(redirect_stdout)
+        freopen(RCRL_BUILD_FOLDER "/rcrl_stdout.txt", "w", stdout);
 
     // load the plugin
     auto plugin = RDRL_LoadDynlib(name_copied.c_str());
@@ -219,5 +227,23 @@ void copy_and_load_new_plugin() {
 
     // add the plugin to the list of loaded ones - for later unloading
     g_plugins.push_back({name_copied, plugin});
+
+    string out;
+
+    if(redirect_stdout) {
+        fclose(stdout);
+        freopen("CON", "w", stdout);
+
+        FILE* f = fopen(RCRL_BUILD_FOLDER "/rcrl_stdout.txt", "rb");
+        fseek(f, 0, SEEK_END);
+        long fsize = ftell(f);
+        fseek(f, 0, SEEK_SET);
+
+        out.resize(fsize);
+        fread((void*)out.data(), fsize, 1, f);
+        fclose(f);
+    }
+
+    return out;
 }
 } // namespace rcrl

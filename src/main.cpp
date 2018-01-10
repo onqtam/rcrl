@@ -68,6 +68,12 @@ cout << a << endl;
     // holds the compiler output
     string compiler_output;
 
+    // holds the standard output from while loading the plugin
+    string redirected_stdout;
+
+    // holds the exit code from the last compilation - there was an error when not 0
+    int last_compiler_exitcode = 0;
+
     // main loop
     while(!glfwWindowShouldClose(window)) {
         // poll for events
@@ -96,7 +102,10 @@ cout << a << endl;
             ImGui::SameLine();
             // top right part
             ImGui::BeginChild("compiler output", ImVec2(0, text_field_height));
-            ImGui::Text("Compiler output");
+            if(last_compiler_exitcode)
+                ImGui::TextColored({1, 0, 0, 1}, "Compiler output - ERROR!!!");
+            else
+                ImGui::Text("Compiler output");
             compiler_output += rcrl::get_new_compiler_output();
             ImGui::InputTextMultiline("##compiler_output", (char*)compiler_output.data(), compiler_output.size(),
                                       ImVec2(-1.f, -1.f), ImGuiInputTextFlags_ReadOnly);
@@ -112,20 +121,28 @@ cout << a << endl;
             ImGui::SameLine();
             // bottom right part
             ImGui::BeginChild("program output", ImVec2(0, text_field_height));
+            ImGui::Text("Program output");
+            ImGui::InputTextMultiline("##program_output", (char*)redirected_stdout.data(), redirected_stdout.size(),
+                                      ImVec2(-1.f, -1.f), ImGuiInputTextFlags_ReadOnly);
+            ImGui::EndChild();
+
             static rcrl::Mode mode = rcrl::FROM_COMMENTS;
             ImGui::RadioButton("from comments", (int*)&mode, rcrl::FROM_COMMENTS);
+            ImGui::SameLine();
             ImGui::RadioButton("global", (int*)&mode, rcrl::GLOBAL);
+            ImGui::SameLine();
             ImGui::RadioButton("vars", (int*)&mode, rcrl::VARS);
+            ImGui::SameLine();
             ImGui::RadioButton("once", (int*)&mode, rcrl::ONCE);
+            ImGui::SameLine();
             auto compile = ImGui::Button("Compile and run");
+            ImGui::SameLine();
             if(ImGui::Button("Cleanup") && !rcrl::is_compiling()) {
                 rcrl::cleanup_plugins();
                 compiler_output.clear();
+                redirected_stdout.clear();
                 history.SetText("\r");
             }
-            //ImGui::Text("Program output");
-            //ImGui::InputTextMultiline("##program_output", "", 0, ImVec2(-1.f, -1.f), ImGuiInputTextFlags_ReadOnly);
-            ImGui::EndChild();
 
             // if the user has submitted code
             ImGuiIO& io = ImGui::GetIO();
@@ -145,12 +162,11 @@ cout << a << endl;
         //}
 
         // if there is a spawned compiler process and it has just finished
-        int exitcode = 0;
-        if(rcrl::try_get_exit_status_from_compile(exitcode)) {
+        if(rcrl::try_get_exit_status_from_compile(last_compiler_exitcode)) {
             // we can edit the code again
             editor.SetReadOnly(false);
 
-            if(exitcode) {
+            if(last_compiler_exitcode) {
                 // errors occurred
                 editor.SetCursorPosition({editor.GetTotalLines(), 0});
             } else {
@@ -166,7 +182,7 @@ cout << a << endl;
                 editor.SetCursorPosition({0, 0});
 
                 // load the new plugin
-                rcrl::copy_and_load_new_plugin();
+                redirected_stdout += rcrl::copy_and_load_new_plugin(true);
             }
         }
 

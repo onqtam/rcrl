@@ -11,7 +11,7 @@ add_test(NAME rcrl_parser_tests COMMAND rcrl_parser_tests)
 add_executable(rcrl_compiler_tests ../src/rcrl/rcrl.cpp ../src/rcrl/rcrl_parser.cpp compiler_tests.cpp)
 # needed defines
 target_compile_definitions(rcrl_compiler_tests PRIVATE "RCRL_PLUGIN_FILE=\"${plugin_file}\"")
-target_compile_definitions(rcrl_compiler_tests PRIVATE "RCRL_PLUGIN_PROJECT=\"test_plugin\"")
+target_compile_definitions(rcrl_compiler_tests PRIVATE "RCRL_PLUGIN_NAME=\"test_plugin\"")
 target_compile_definitions(rcrl_compiler_tests PRIVATE "RCRL_BUILD_FOLDER=\"${PROJECT_BINARY_DIR}\"")
 target_compile_definitions(rcrl_compiler_tests PRIVATE "RCRL_BIN_FOLDER=\"$<TARGET_FILE_DIR:rcrl_compiler_tests>/\"")
 target_compile_definitions(rcrl_compiler_tests PRIVATE "RCRL_EXTENSION=\"${CMAKE_SHARED_LIBRARY_SUFFIX}\"")

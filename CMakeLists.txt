@@ -58,7 +58,7 @@ endif()
 
 # defines needed for easier RCRL integration
 target_compile_definitions(host_app PRIVATE "RCRL_PLUGIN_FILE=\"${plugin_file}\"")
-target_compile_definitions(host_app PRIVATE "RCRL_PLUGIN_PROJECT=\"plugin\"")
+target_compile_definitions(host_app PRIVATE "RCRL_PLUGIN_NAME=\"plugin\"")
 target_compile_definitions(host_app PRIVATE "RCRL_BUILD_FOLDER=\"${PROJECT_BINARY_DIR}\"")
 target_compile_definitions(host_app PRIVATE "RCRL_BIN_FOLDER=\"$<TARGET_FILE_DIR:host_app>/\"")
 target_compile_definitions(host_app PRIVATE "RCRL_EXTENSION=\"${CMAKE_SHARED_LIBRARY_SUFFIX}\"")

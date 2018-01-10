@@ -111,15 +111,15 @@ vector<pair<size_t, Mode>> remove_comments(string& out) {
                 auto directive_finder = [&](const string& look_for) {
                     auto directive_last_pos = text.rfind(look_for, i);
                     if(directive_last_pos != string::npos) {
-						// check that there are is only whitespace after the directive
+                        // check that there are is only whitespace after the directive
                         for(auto k = directive_last_pos + look_for.size(); k < i; ++k)
                             if(!isspace(text[k]))
                                 return false;
 
-						// check that there are is only whitespace before the directive
-						for(auto k = directive_last_pos - 1; text[k] != '/'; --k)
-							if(!isspace(text[k]))
-								return false;
+                        // check that there are is only whitespace before the directive
+                        for(auto k = directive_last_pos - 1; text[k] != '/'; --k)
+                            if(!isspace(text[k]))
+                                return false;
 
                         return true;
                     }
