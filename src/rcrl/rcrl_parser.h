@@ -15,7 +15,7 @@ struct VariableDefinition
 };
 
 // removes comments from the string and returns a list of parsed beginings of sections - one of the 3: global/vars/once
-std::vector<std::pair<size_t, Mode>> remove_comments(std::string& out);
+std::vector<std::pair<size_t, Mode>> remove_comments(std::string& out, Mode mode);
 // parses variables from code - for 'vars' sections
 std::vector<VariableDefinition> parse_vars(const std::string& text);
 

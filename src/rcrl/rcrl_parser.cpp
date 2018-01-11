@@ -37,11 +37,11 @@ static vector<string> split(const string& str) {
     return tokens;
 }
 
-vector<pair<size_t, Mode>> remove_comments(string& out) {
+vector<pair<size_t, Mode>> remove_comments(string& out, Mode mode) {
     const string text(out);
 
     vector<pair<size_t, Mode>> section_starts;
-    section_starts.push_back({0, ONCE}); // this is the default input method
+    section_starts.push_back({0, mode}); // this is the default input method
 
     bool in_char                = false; // 'c'
     bool in_string              = false; // "str"

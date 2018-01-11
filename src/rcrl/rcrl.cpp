@@ -110,11 +110,7 @@ bool submit_code(string code, Mode mode) {
     replace(code.begin(), code.end(), '\r', '\n');
 
     // figure out the sections
-    auto section_beginings = remove_comments(code);
-    if(mode != FROM_COMMENTS) {
-        section_beginings.clear();
-        section_beginings.push_back({0, mode});
-    }
+    auto section_beginings = remove_comments(code, mode);
 
     // fill the current sections of code for compilation
     uncompiled_sections.clear();

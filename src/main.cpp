@@ -126,8 +126,8 @@ cout << a << endl;
                                       ImVec2(-1.f, -1.f), ImGuiInputTextFlags_ReadOnly);
             ImGui::EndChild();
 
-            static rcrl::Mode mode = rcrl::FROM_COMMENTS;
-            ImGui::RadioButton("from comments", (int*)&mode, rcrl::FROM_COMMENTS);
+            static rcrl::Mode mode = rcrl::ONCE;
+            ImGui::Text("Default mode:");
             ImGui::SameLine();
             ImGui::RadioButton("global", (int*)&mode, rcrl::GLOBAL);
             ImGui::SameLine();
