@@ -159,12 +159,12 @@ vector<VariableDefinition> parse_vars(const string& text, size_t line_start) {
 
     bool just_enterned_char_string = false;
 
-    vector<pair<char, int>> braces;                       // the current active stack of braces
-    int                     opened_template_brackets = 0; // the current active stack of template <> braces
+    vector<pair<char, size_t>> braces;                       // the current active stack of braces
+    int                        opened_template_brackets = 0; // the current active stack of template <> braces
 
-    vector<int> semicolons;        // the positions of all semicolons
-    vector<int> whitespace_begins; // the positions of all whitespace beginings
-    vector<int> whitespace_ends;   // the positions of all whitespace endings
+    vector<size_t> semicolons;        // the positions of all semicolons
+    vector<size_t> whitespace_begins; // the positions of all whitespace beginings
+    vector<size_t> whitespace_ends;   // the positions of all whitespace endings
 
     VariableDefinition current_var;
     bool               in_var               = false;
@@ -237,8 +237,8 @@ vector<VariableDefinition> parse_vars(const string& text, size_t line_start) {
 
                     current_var.name = text.substr(var_name_begin, var_name_len);
                     trim(current_var.name);
-                    int type_begin   = semicolons.size() ? semicolons.back() + 1 : 0;
-                    current_var.type = text.substr(type_begin, var_name_begin - type_begin);
+                    size_t type_begin = semicolons.size() ? semicolons.back() + 1 : 0;
+                    current_var.type  = text.substr(type_begin, var_name_begin - type_begin);
                     trim(current_var.type);
 
                     if(current_var.type.size() == 0)
