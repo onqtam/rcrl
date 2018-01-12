@@ -9,7 +9,6 @@ Read-Compile-Run-Loop - a REPL variant for C++ (much lighter than cling)
 TODO:
 
 - parse references and perhaps auto pointers (auto*)
-- better error messages from parser - with line and column in the report when something unexpected is encountered
 - better GUI
 - document the API - like any specifics for each call
 - something more interesting should happen in the background for the demo

@@ -110,25 +110,26 @@ bool submit_code(string code, Mode mode) {
     replace(code.begin(), code.end(), '\r', '\n');
 
     // figure out the sections
-    auto section_beginings = remove_comments(code, mode);
+    auto section_beginings = parse_sections_and_remove_comments(code, mode);
 
     // fill the current sections of code for compilation
     uncompiled_sections.clear();
     for(auto it = section_beginings.begin(); it != section_beginings.end(); ++it) {
         // get the code
-        string section_code = code.substr(
-                it->first, (it + 1 == section_beginings.end() ? code.size() - it->first : (it + 1)->first - it->first));
+        string section_code =
+                code.substr(it->start_idx, (it + 1 == section_beginings.end() ? code.size() - it->start_idx :
+                                                                                (it + 1)->start_idx - it->start_idx));
 
         // for nicer output
         if(section_code.back() != '\n')
             section_code.push_back('\n');
 
-        if(it->second == ONCE)
+        if(it->mode == ONCE)
             section_code = "RCRL_ONCE_BEGIN\n" + section_code + "RCRL_ONCE_END\n";
 
-        if(it->second == VARS) {
+        if(it->mode == VARS) {
             try {
-                auto vars = parse_vars(section_code);
+                auto vars = parse_vars(section_code, it->line);
                 section_code.clear();
 
                 for(const auto& var : vars) {
@@ -148,7 +149,7 @@ bool submit_code(string code, Mode mode) {
         }
 
         // push the section code to the list of uncompiled ones
-        uncompiled_sections.push_back({section_code, it->second});
+        uncompiled_sections.push_back({section_code, it->mode});
     }
 
     // concatenate all the sections to make the source file to be compiled

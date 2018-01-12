@@ -37,17 +37,19 @@ static vector<string> split(const string& str) {
     return tokens;
 }
 
-vector<pair<size_t, Mode>> remove_comments(string& out, Mode mode) {
+vector<Section> parse_sections_and_remove_comments(string& out, Mode default_mode) {
     const string text(out);
 
-    vector<pair<size_t, Mode>> section_starts;
-    section_starts.push_back({0, mode}); // this is the default input method
+    size_t line = 1;
 
     bool in_char                = false; // 'c'
     bool in_string              = false; // "str"
     bool in_comment             = false;
     bool in_single_line_comment = false;
     bool in_multi_line_comment  = false;
+
+    vector<Section> section_starts;
+    section_starts.push_back({0, line, default_mode}); // this is the default input method
 
     for(size_t i = 0; i < text.size(); ++i) {
         const char c = text[i];
@@ -127,14 +129,16 @@ vector<pair<size_t, Mode>> remove_comments(string& out, Mode mode) {
                 };
 
                 if(directive_finder("global"))
-                    section_starts.push_back({i, GLOBAL});
+                    section_starts.push_back({i, line, GLOBAL});
                 if(directive_finder("vars"))
-                    section_starts.push_back({i, VARS});
+                    section_starts.push_back({i, line, VARS});
                 if(directive_finder("once"))
-                    section_starts.push_back({i, ONCE});
+                    section_starts.push_back({i, line, ONCE});
 
                 continue;
             }
+
+            line++;
         }
 
         if(in_comment) {
@@ -146,7 +150,7 @@ vector<pair<size_t, Mode>> remove_comments(string& out, Mode mode) {
     return section_starts;
 }
 
-vector<VariableDefinition> parse_vars(const string& text) {
+vector<VariableDefinition> parse_vars(const string& text, size_t line_start) {
     vector<VariableDefinition> out;
 
     bool in_char       = false; // 'c'
@@ -165,6 +169,13 @@ vector<VariableDefinition> parse_vars(const string& text) {
     VariableDefinition current_var;
     bool               in_var               = false;
     size_t             current_var_name_end = 0;
+
+    int line   = line_start + 1;
+    int column = 1;
+
+    auto parse_error = [&](const char* msg) {
+        return string("parse error (") + to_string(line) + "/" + to_string(column) + "): " + msg;
+    };
 
     for(size_t i = 0; i < text.size(); ++i) {
         const char c = text[i];
@@ -217,7 +228,7 @@ vector<VariableDefinition> parse_vars(const string& text) {
                 // if after the name of a variable
                 if(!in_var && !opening_decltype) {
                     if(whitespace_ends.size() < 2)
-                        throw runtime_error("parse error - expected <type> <name>... with atleast 1 space in between");
+                        throw runtime_error(parse_error("expected <type> <name>... with atleast 1 space in between"));
 
                     auto var_name_begin  = whitespace_ends.back();
                     auto var_name_len    = i - var_name_begin;
@@ -231,9 +242,9 @@ vector<VariableDefinition> parse_vars(const string& text) {
                     trim(current_var.type);
 
                     if(current_var.type.size() == 0)
-                        throw runtime_error("parse error - couldn't parse type for var");
+                        throw runtime_error(parse_error("couldn't parse type for var"));
                     if(current_var.type.back() == '&')
-                        throw runtime_error("parse error - references not supported by RCRL");
+                        throw runtime_error(parse_error("references not supported by RCRL"));
 
                     // detect "auto"/"const auto" types and put them in a canonical form with just 1 space between them
                     auto tokens = split(current_var.type);
@@ -251,7 +262,7 @@ vector<VariableDefinition> parse_vars(const string& text) {
                         current_var.has_assignment = true;
                         trim(current_var.initializer);
                         if(current_var.initializer.size() == 0)
-                            throw runtime_error("parse error - no initializer code between '=' and ';'");
+                            throw runtime_error(parse_error("no initializer code between '=' and ';'"));
                     }
 
                     if(current_var.initializer.size() && current_var.initializer.front() != '(' &&
@@ -279,7 +290,7 @@ vector<VariableDefinition> parse_vars(const string& text) {
                     ++opened_template_brackets;
                 } else {
                     if(opened_template_brackets == 0)
-                        throw runtime_error("parse error - template opening/closing bracket mismatch");
+                        throw runtime_error(parse_error("template opening/closing bracket mismatch"));
                     --opened_template_brackets;
                 }
             }
@@ -289,13 +300,19 @@ vector<VariableDefinition> parse_vars(const string& text) {
             if(c == ')' || c == ']' || c == '}') {
                 // check that we are closing the right bracket
                 if(braces.size() == 0)
-                    throw runtime_error("parse error - encountered closing brace without an opening one");
+                    throw runtime_error(parse_error("encountered closing brace without an opening one"));
                 if(braces.back().first != (c == ')' ? '(' : (c == '}' ? '{' : '[')))
-                    throw runtime_error("parse error - closing brace mismatch");
+                    throw runtime_error(parse_error("closing brace mismatch"));
                 braces.pop_back();
             }
             if(braces.size() == 0 && c == ';') {
                 semicolons.push_back(i);
+            }
+            if(c == '\n') {
+                line++;
+                column = 1;
+            } else {
+                column++;
             }
         }
 

@@ -7,6 +7,6 @@ TEST_CASE("") {
     auto code = R"raw(int a = 5;
 )raw";
 
-    auto vars = rcrl::parse_vars(code);
+    auto vars = rcrl::parse_vars(code, 1);
     CHECK(vars.size() == 1);
 }
