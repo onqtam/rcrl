@@ -13,7 +13,6 @@
 #include <stdexcept>
 #include <algorithm>
 #include <sstream>
-#include <iostream> // TODO: to remove
 
 #include <process.hpp>
 
@@ -57,19 +56,23 @@ RCRL_SYMBOL_EXPORT void   rcrl_add_deleter(void* address, void (*deleter)(void*)
 
 namespace rcrl
 {
-vector<pair<string, RCRL_Dynlib>>   g_plugins;
+// global state
+vector<pair<string, RCRL_Dynlib>>   plugins;
 unique_ptr<TinyProcessLib::Process> compiler_process;
 string                              compiler_output;
 mutex                               compiler_output_mut;
+bool                                last_compile_successful = false;
+// holds code only for global and vars sections which have already been successfully compiled and loaded
+vector<string> compiled_sections;
+// holds all the sections which were last submitted for compilation - on success and if the
+// new plugin is loaded global and vars sections will be put in the compiled_sections list
+vector<pair<string, Mode>> uncompiled_sections;
 
+// called asynchronously by the compilation process
 void output_appender(const char* bytes, size_t n) {
     lock_guard<mutex> lock(compiler_output_mut);
     compiler_output += string(bytes, n);
 }
-
-bool                       last_compile_successful = false;
-vector<string>             compiled_sections;
-vector<pair<string, Mode>> uncompiled_sections;
 
 void cleanup_plugins() {
     assert(!is_compiling());
@@ -84,7 +87,7 @@ void cleanup_plugins() {
     rcrl_persistence.clear();
 
     // close the plugins in reverse order
-    for(auto it = g_plugins.rbegin(); it != g_plugins.rend(); ++it)
+    for(auto it = plugins.rbegin(); it != plugins.rend(); ++it)
         RCRL_CloseDynlib(it->second);
 
     string bin_folder(RCRL_BIN_FOLDER);
@@ -93,12 +96,12 @@ void cleanup_plugins() {
     replace(bin_folder.begin(), bin_folder.end(), '/', '\\');
 #endif // _WIN32
 
-    if(g_plugins.size())
+    if(plugins.size())
         system((string(RCRL_System_Delete) + bin_folder + RCRL_PLUGIN_NAME "_*" RCRL_EXTENSION).c_str());
-    g_plugins.clear();
+    plugins.clear();
 }
 
-bool submit_code(string code, Mode mode) {
+bool submit_code(string code, Mode default_mode) {
     assert(!is_compiling());
     assert(code.size());
 
@@ -110,7 +113,7 @@ bool submit_code(string code, Mode mode) {
     replace(code.begin(), code.end(), '\r', '\n');
 
     // figure out the sections
-    auto section_beginings = parse_sections_and_remove_comments(code, mode);
+    auto section_beginings = parse_sections_and_remove_comments(code, default_mode);
 
     // fill the current sections of code for compilation
     uncompiled_sections.clear();
@@ -144,7 +147,7 @@ bool submit_code(string code, Mode mode) {
             } catch(exception& e) {
                 output_appender(e.what(), strlen(e.what()));
                 uncompiled_sections.clear();
-                return true;
+                return false;
             }
         }
 
@@ -170,12 +173,12 @@ bool submit_code(string code, Mode mode) {
                                         " --config " RCRL_CONFIG
 #endif // multi config IDE
 #if defined(RCRL_CONFIG) && defined(_MSC_VER)
-                                        " -- /verbosity:quiet /consoleloggerparameters:PerformanceSummary"
+                                        " -- /verbosity:quiet"
 #endif // Visual Studio
                                         ,
                                         "", output_appender, output_appender));
 
-    return false;
+    return true;
 }
 
 string get_new_compiler_output() {
@@ -210,7 +213,7 @@ string copy_and_load_new_plugin(bool redirect_stdout) {
             compiled_sections.push_back(section.first);
 
     // copy the plugin
-    auto       name_copied = string(RCRL_BIN_FOLDER) + RCRL_PLUGIN_NAME "_" + to_string(g_plugins.size()) + RCRL_EXTENSION;
+    auto       name_copied = string(RCRL_BIN_FOLDER) + RCRL_PLUGIN_NAME "_" + to_string(plugins.size()) + RCRL_EXTENSION;
     const auto copy_res =
             RCRL_CopyDynlib((string(RCRL_BIN_FOLDER) + RCRL_PLUGIN_NAME RCRL_EXTENSION).c_str(), name_copied.c_str());
     assert(copy_res);
@@ -223,7 +226,7 @@ string copy_and_load_new_plugin(bool redirect_stdout) {
     assert(plugin);
 
     // add the plugin to the list of loaded ones - for later unloading
-    g_plugins.push_back({name_copied, plugin});
+    plugins.push_back({name_copied, plugin});
 
     string out;
 

@@ -1,8 +1,8 @@
 #include "rcrl_parser.h"
 
 #include <cassert>
-#include <cctype>  // isspace()
-#include <cstring> // strlen()
+#include <cctype>
+#include <cstring>
 #include <stdexcept>
 #include <algorithm>
 #include <sstream>

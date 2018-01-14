@@ -30,7 +30,7 @@ int main() {
     glfwSetErrorCallback([](int error, const char* description) { fprintf(stderr, "%d %s", error, description); });
     if(!glfwInit())
         return 1;
-    GLFWwindow* window = glfwCreateWindow(1024, 768, "Read-Compile-Run-Loop - REPL for C++", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(1280, 1024, "Read-Compile-Run-Loop - REPL for C++", nullptr, nullptr);
     glfwMakeContextCurrent(window);
 
     // Setup ImGui binding
@@ -47,11 +47,39 @@ int main() {
     TextEditor history;
     history.SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus());
     history.SetReadOnly(true);
-	history.SetText("#include \"precompiled_for_plugin.h\"\n");
+    history.SetText("#include \"precompiled_for_plugin.h\"\n");
 
     // an editor instance - for the core being currently written
     TextEditor editor;
     editor.SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus());
+
+    // compiler output - with an empty language definition and a custom palette
+    TextEditor compiler_output;
+    compiler_output.SetLanguageDefinition(TextEditor::LanguageDefinition());
+    compiler_output.SetReadOnly(true);
+    compiler_output.SetPalette({
+            0xcccccccc, // None
+            0xcccccccc, // Keyword
+            0xcccccccc, // Number
+            0xcccccccc, // String
+            0xcccccccc, // Char literal
+            0xcccccccc, // Punctuation
+            0xcccccccc, // Preprocessor
+            0xcccccccc, // Identifier
+            0xcccccccc, // Known identifier
+            0xcccccccc, // Preproc identifier
+            0xcccccccc, // Comment (single line)
+            0xcccccccc, // Comment (multi line)
+            0xff101010, // Background
+            0xcccccccc, // Cursor
+            0x80a06020, // Selection
+            0xcccccccc, // ErrorMarker
+            0xcccccccc, // Breakpoint
+            0xcccccccc, // Line number
+            0x40000000, // Current line fill
+            0x40808080, // Current line fill (inactive)
+            0x40a0a0a0, // Current line edge
+    });
 
     // set initial code
     editor.SetText(
@@ -65,9 +93,6 @@ a++;
 // once
 cout << a << endl;
 )raw");
-
-    // holds the compiler output
-    string compiler_output;
 
     // holds the standard output from while loading the plugin
     string redirected_stdout;
@@ -95,7 +120,7 @@ cout << a << endl;
         if(ImGui::Begin("console", nullptr, flags)) {
             const auto text_field_height = ImGui::GetTextLineHeight() * 15;
             // top left part
-            ImGui::BeginChild("history code", ImVec2(display_w * 0.5f, text_field_height));
+            ImGui::BeginChild("history code", ImVec2(display_w * 0.45f, text_field_height));
             auto hcpos = editor.GetCursorPosition();
             ImGui::Text("Executed code: %3d/%-3d %3d lines", hcpos.mLine + 1, hcpos.mColumn + 1, editor.GetTotalLines());
             history.Render("History");
@@ -103,17 +128,23 @@ cout << a << endl;
             ImGui::SameLine();
             // top right part
             ImGui::BeginChild("compiler output", ImVec2(0, text_field_height));
+            auto new_output = rcrl::get_new_compiler_output();
+            if(new_output.size()) {
+                compiler_output.SetText(compiler_output.GetText() + new_output);
+                compiler_output.SetCursorPosition({compiler_output.GetTotalLines(), 1});
+            }
             if(last_compiler_exitcode)
-                ImGui::TextColored({1, 0, 0, 1}, "Compiler output - ERROR!!!");
+                ImGui::TextColored({1, 0, 0, 1}, "Compiler output - ERROR!");
             else
-                ImGui::Text("Compiler output");
-            compiler_output += rcrl::get_new_compiler_output();
-            ImGui::InputTextMultiline("##compiler_output", (char*)compiler_output.data(), compiler_output.size(),
-                                      ImVec2(-1.f, -1.f), ImGuiInputTextFlags_ReadOnly);
+                ImGui::Text("Compiler output:        ");
+            ImGui::SameLine();
+            auto cocpos = compiler_output.GetCursorPosition();
+            ImGui::Text("%3d/%-3d %3d lines", cocpos.mLine + 1, cocpos.mColumn + 1, compiler_output.GetTotalLines());
+            compiler_output.Render("Compiler output");
             ImGui::EndChild();
 
             // bottom left part
-            ImGui::BeginChild("source code", ImVec2(display_w * 0.5f, text_field_height));
+            ImGui::BeginChild("source code", ImVec2(display_w * 0.45f, text_field_height));
             auto ecpos = editor.GetCursorPosition();
             ImGui::Text("RCRL Console: %3d/%-3d %3d lines | %s", ecpos.mLine + 1, ecpos.mColumn + 1, editor.GetTotalLines(),
                         editor.CanUndo() ? "*" : " ");
@@ -140,9 +171,9 @@ cout << a << endl;
             ImGui::SameLine();
             if(ImGui::Button("Cleanup") && !rcrl::is_compiling()) {
                 rcrl::cleanup_plugins();
-                compiler_output.clear();
+                compiler_output.SetText("");
                 redirected_stdout.clear();
-				history.SetText("#include \"precompiled_for_plugin.h\"\n");
+                history.SetText("#include \"precompiled_for_plugin.h\"\n");
             }
 
             // if the user has submitted code
@@ -150,12 +181,20 @@ cout << a << endl;
             compile |= (io.KeysDown[GLFW_KEY_ENTER] && io.KeyCtrl);
             if(compile && !rcrl::is_compiling() && editor.GetText().size() > 1) {
                 // clear compiler output
-                compiler_output.clear();
+                compiler_output.SetText("");
 
-                // submit to the rcrl engine
-                if(!rcrl::submit_code(editor.GetText(), mode)) {
+                // submit to the RCRL engine
+                if(rcrl::submit_code(editor.GetText(), mode)) {
                     // make the editor code untouchable while compiling
                     editor.SetReadOnly(true);
+                } else {
+                    last_compiler_exitcode = 1;
+
+                    TextEditor::ErrorMarkers markers;
+                    markers.insert(std::make_pair<int, std::string>(
+                            6, "Example error here:\nInclude file not found: \"TextEditor.h\""));
+                    markers.insert(std::make_pair<int, std::string>(41, "Another example error"));
+                    editor.SetErrorMarkers(markers);
                 }
             }
         }
