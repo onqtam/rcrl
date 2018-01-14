@@ -51,29 +51,10 @@ int main() {
     TextEditor compiler_output;
     compiler_output.SetLanguageDefinition(TextEditor::LanguageDefinition());
     compiler_output.SetReadOnly(true);
-    compiler_output.SetPalette({
-            0xcccccccc, // None
-            0xcccccccc, // Keyword
-            0xcccccccc, // Number
-            0xcccccccc, // String
-            0xcccccccc, // Char literal
-            0xcccccccc, // Punctuation
-            0xcccccccc, // Preprocessor
-            0xcccccccc, // Identifier
-            0xcccccccc, // Known identifier
-            0xcccccccc, // Preproc identifier
-            0xcccccccc, // Comment (single line)
-            0xcccccccc, // Comment (multi line)
-            0xff101010, // Background
-            0xcccccccc, // Cursor
-            0x80a06020, // Selection
-            0x800020ff, // ErrorMarker
-            0xcccccccc, // Breakpoint
-            0xcccccccc, // Line number
-            0x40000000, // Current line fill
-            0x40808080, // Current line fill (inactive)
-            0x40a0a0a0, // Current line edge
-    });
+    auto custom_palette = TextEditor::GetDarkPalette();
+    custom_palette[11] =
+            0xcccccccc; // override the milti line comment color since all compiler output is treated as such by default
+    compiler_output.SetPalette(custom_palette);
 
     // set some initial code
     editor.SetText(R"raw(cout << "hello!\n";
@@ -111,9 +92,8 @@ cout << a << endl;
         ImGui::SetNextWindowSize({(float)display_w, -1.f}, ImGuiCond_Always);
         ImGui::SetNextWindowPos({0.f, 0.f}, ImGuiCond_Always);
 
-        auto flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-
-        if(ImGui::Begin("console", nullptr, flags)) {
+        if(ImGui::Begin("console", nullptr,
+                        ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
             const auto text_field_height = ImGui::GetTextLineHeight() * 15;
             // top left part
             ImGui::BeginChild("history code", ImVec2(display_w * 0.45f, text_field_height));
