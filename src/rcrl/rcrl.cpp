@@ -14,6 +14,8 @@
 #include <algorithm>
 #include <sstream>
 
+#include <iostream> // TODO: remove
+
 #include <process.hpp>
 
 #ifdef _WIN32
@@ -101,7 +103,7 @@ void cleanup_plugins() {
     plugins.clear();
 }
 
-bool submit_code(string code, Mode default_mode) {
+bool submit_code(string code, Mode default_mode, bool* used_default_mode) {
     assert(!is_compiling());
     assert(code.size());
 
@@ -122,6 +124,9 @@ bool submit_code(string code, Mode default_mode) {
         string section_code =
                 code.substr(it->start_idx, (it + 1 == section_beginings.end() ? code.size() - it->start_idx :
                                                                                 (it + 1)->start_idx - it->start_idx));
+
+        if(used_default_mode && it == section_beginings.begin())
+            *used_default_mode = section_code.find_first_not_of(" \t\n\v\f\r") != string::npos;
 
         // for nicer output
         if(section_code.back() != '\n')

@@ -73,6 +73,7 @@ int main() {
             0x40808080, // Current line fill (inactive)
             0x40a0a0a0, // Current line edge
     });
+	TextEditor::ErrorMarkers compiler_output_error_markers;
 
     // set initial code
     editor.SetText(
@@ -92,6 +93,10 @@ cout << a << endl;
 
     // holds the exit code from the last compilation - there was an error when not 0
     int last_compiler_exitcode = 0;
+
+	// if the default mode was used for the first section
+	bool used_default_mode = false;
+	rcrl::Mode default_mode = rcrl::ONCE;
 
     // main loop
     while(!glfwWindowShouldClose(window)) {
@@ -122,6 +127,16 @@ cout << a << endl;
             ImGui::BeginChild("compiler output", ImVec2(0, text_field_height));
             auto new_output = rcrl::get_new_compiler_output();
             if(new_output.size()) {
+				//TextEditor::ErrorMarkers markers;
+				//markers.insert(std::make_pair<int, std::string>(
+				//	6, "Example error here:\nInclude file not found: \"TextEditor.h\""));
+				//markers.insert(std::make_pair<int, std::string>(41, "Another example error"));
+				//editor.SetErrorMarkers(markers);
+
+				//compiler_output_error_markers
+
+				//compiler_output.GetTotalLines()
+
                 compiler_output.SetText(compiler_output.GetText() + new_output);
                 compiler_output.SetCursorPosition({compiler_output.GetTotalLines(), 1});
             }
@@ -176,17 +191,12 @@ cout << a << endl;
                 compiler_output.SetText("");
 
                 // submit to the RCRL engine
-                if(rcrl::submit_code(editor.GetText(), mode)) {
+                if(rcrl::submit_code(editor.GetText(), mode, &used_default_mode)) {
+					default_mode = mode;
                     // make the editor code untouchable while compiling
                     editor.SetReadOnly(true);
                 } else {
                     last_compiler_exitcode = 1;
-
-                    TextEditor::ErrorMarkers markers;
-                    markers.insert(std::make_pair<int, std::string>(
-                            6, "Example error here:\nInclude file not found: \"TextEditor.h\""));
-                    markers.insert(std::make_pair<int, std::string>(41, "Another example error"));
-                    editor.SetErrorMarkers(markers);
                 }
             }
         }
@@ -206,6 +216,9 @@ cout << a << endl;
                 auto history_text = history.GetText();
                 if(history_text.size() && history_text.back() != '\n')
                     history_text += '\n';
+				if(used_default_mode)
+                    history_text += default_mode == rcrl::GLOBAL ? "// global\n" :
+                                                                   (default_mode == rcrl::VARS ? "// vars\n" : "// once\n");
                 history.SetText(history_text + editor.GetText());
 
                 // clear the editor
@@ -216,8 +229,6 @@ cout << a << endl;
                 redirected_stdout += rcrl::copy_and_load_new_plugin(true);
             }
         }
-
-        //ImGui::ShowDemoWindow();
 
         // rendering
         glViewport(0, 0, display_w, display_h);

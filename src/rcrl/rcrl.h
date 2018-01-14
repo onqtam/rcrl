@@ -33,10 +33,12 @@ void cleanup_plugins();
 //   parsing errors can be obtained through rcrl::get_new_compiler_output()
 // - submits the sections for compilation in a non-blocking way using 'tiny-process-library' for the process
 // - returns true if the parsing succeeds and the compilation is started
+// - can optionally tell if the default mode was actually used (not used when the first thing in
+//   the code is an explicit section change in a comment) - through the optional boolean pointer
 // Shouldn't be called if:
 // - compilation is in progress
 // - code is empty
-bool submit_code(std::string code, Mode default_mode);
+bool submit_code(std::string code, Mode default_mode, bool* used_default_mode = nullptr);
 
 // Returns any new compiler output, since it's done in a background thread (also returns parser errors)
 std::string get_new_compiler_output();

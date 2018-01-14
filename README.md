@@ -10,6 +10,8 @@ TODO:
 
 - parse references and perhaps auto pointers (auto*)
 - better GUI
+- error location mapping in the source code
+- crash handling on loading of the plugin
 - document the API - like any specifics for each call
 - something more interesting should happen in the background for the demo
 - stress test everything (+unit tests for the parsing function of vars)
