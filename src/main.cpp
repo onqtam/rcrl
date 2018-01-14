@@ -7,8 +7,6 @@
 
 using namespace std;
 
-//bool g_console_visible = true;
-
 // my own callback - need to add the carriage return symbols to make ImGuiColorTextEdit work when 'enter' is pressed
 void My_ImGui_ImplGlfwGL2_KeyCallback(GLFWwindow* w, int key, int scancode, int action, int mods) {
     // call the callback from the imgui/glfw integration
@@ -18,11 +16,6 @@ void My_ImGui_ImplGlfwGL2_KeyCallback(GLFWwindow* w, int key, int scancode, int 
     ImGuiIO& io = ImGui::GetIO();
     if(key == GLFW_KEY_ENTER && !io.KeyCtrl && (action == GLFW_PRESS || action == GLFW_REPEAT))
         io.AddInputCharacter((unsigned short)'\n');
-
-    // this should be commented until this is fixed: https://github.com/BalazsJako/ImGuiColorTextEdit/issues/8
-    //if(!io.WantCaptureKeyboard && !io.WantTextInput && key == GLFW_KEY_GRAVE_ACCENT &&
-    //   (action == GLFW_PRESS || action == GLFW_REPEAT))
-    //    g_console_visible = !g_console_visible;
 }
 
 int main() {
@@ -116,7 +109,6 @@ cout << a << endl;
 
         auto flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
 
-        //if(g_console_visible) {
         if(ImGui::Begin("console", nullptr, flags)) {
             const auto text_field_height = ImGui::GetTextLineHeight() * 15;
             // top left part
@@ -199,7 +191,6 @@ cout << a << endl;
             }
         }
         ImGui::End();
-        //}
 
         // if there is a spawned compiler process and it has just finished
         if(rcrl::try_get_exit_status_from_compile(last_compiler_exitcode)) {
