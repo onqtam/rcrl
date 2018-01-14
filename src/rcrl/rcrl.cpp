@@ -47,14 +47,12 @@ typedef void* RCRL_Dynlib;
 
 using namespace std;
 
-map<string, void*>                   rcrl_persistence;
-vector<pair<void*, void (*)(void*)>> rcrl_deleters;
+map<string, void*>                   persistence;
+vector<pair<void*, void (*)(void*)>> deleters;
 
 // for use by the rcrl plugin
-RCRL_SYMBOL_EXPORT void*& rcrl_get_persistence(const char* var_name) { return rcrl_persistence[var_name]; }
-RCRL_SYMBOL_EXPORT void   rcrl_add_deleter(void* address, void (*deleter)(void*)) {
-    rcrl_deleters.push_back({address, deleter});
-}
+RCRL_SYMBOL_EXPORT void*& rcrl_get_persistence(const char* var_name) { return persistence[var_name]; }
+RCRL_SYMBOL_EXPORT void   rcrl_add_deleter(void* address, void (*deleter)(void*)) { deleters.push_back({address, deleter}); }
 
 namespace rcrl
 {
@@ -80,13 +78,13 @@ void cleanup_plugins() {
     assert(!is_compiling());
 
     // call the deleters in reverse order
-    for(auto it = rcrl_deleters.rbegin(); it != rcrl_deleters.rend(); ++it)
+    for(auto it = deleters.rbegin(); it != deleters.rend(); ++it)
         it->second(it->first);
-    rcrl_deleters.clear();
+    deleters.clear();
 
     // clear the code sections and pointers to globals
     compiled_sections.clear();
-    rcrl_persistence.clear();
+    persistence.clear();
 
     // close the plugins in reverse order
     for(auto it = plugins.rbegin(); it != plugins.rend(); ++it)
