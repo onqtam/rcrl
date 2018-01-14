@@ -40,6 +40,7 @@ int main() {
     TextEditor history;
     history.SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus());
     history.SetReadOnly(true);
+    // this is the precompiled header for the plugin in this demo project so it's contents are always there for the plugin
     history.SetText("#include \"precompiled_for_plugin.h\"\n");
 
     // an editor instance - for the core being currently written
@@ -66,18 +67,16 @@ int main() {
             0xff101010, // Background
             0xcccccccc, // Cursor
             0x80a06020, // Selection
-            0xcccccccc, // ErrorMarker
+            0x800020ff, // ErrorMarker
             0xcccccccc, // Breakpoint
             0xcccccccc, // Line number
             0x40000000, // Current line fill
             0x40808080, // Current line fill (inactive)
             0x40a0a0a0, // Current line edge
     });
-	TextEditor::ErrorMarkers compiler_output_error_markers;
 
-    // set initial code
-    editor.SetText(
-            R"raw(cout << "hello!\n";
+    // set some initial code
+    editor.SetText(R"raw(cout << "hello!\n";
 // global
 int f() { return 42; }
 // vars
@@ -94,9 +93,9 @@ cout << a << endl;
     // holds the exit code from the last compilation - there was an error when not 0
     int last_compiler_exitcode = 0;
 
-	// if the default mode was used for the first section
-	bool used_default_mode = false;
-	rcrl::Mode default_mode = rcrl::ONCE;
+    // if the default mode was used for the first section
+    bool       used_default_mode = false;
+    rcrl::Mode default_mode      = rcrl::ONCE;
 
     // main loop
     while(!glfwWindowShouldClose(window)) {
@@ -127,18 +126,34 @@ cout << a << endl;
             ImGui::BeginChild("compiler output", ImVec2(0, text_field_height));
             auto new_output = rcrl::get_new_compiler_output();
             if(new_output.size()) {
-				//TextEditor::ErrorMarkers markers;
-				//markers.insert(std::make_pair<int, std::string>(
-				//	6, "Example error here:\nInclude file not found: \"TextEditor.h\""));
-				//markers.insert(std::make_pair<int, std::string>(41, "Another example error"));
-				//editor.SetErrorMarkers(markers);
+                auto total_output = compiler_output.GetText() + new_output;
 
-				//compiler_output_error_markers
+                // scan for errors through the lines and highlight them with markers
+                auto                     curr_pos                = 0;
+                auto                     line                    = 1;
+                auto                     first_error_marker_line = 0;
+                TextEditor::ErrorMarkers error_markers;
+                do {
+                    auto new_curr_pos_1 = total_output.find("error", curr_pos + 1); // add 1 to skip new lines
+                    auto new_curr_pos_2 = total_output.find("\n", curr_pos + 1);    // add 1 to skip new lines
+                    if(new_curr_pos_1 < new_curr_pos_2) {
+                        error_markers.insert(make_pair(line, ""));
+                        if(!first_error_marker_line)
+                            first_error_marker_line = line;
+                    }
+                    if(new_curr_pos_2 < new_curr_pos_1) {
+                        line++;
+                    }
+                    curr_pos = min(new_curr_pos_1, new_curr_pos_2);
+                } while(curr_pos != string::npos);
+                compiler_output.SetErrorMarkers(error_markers);
 
-				//compiler_output.GetTotalLines()
-
-                compiler_output.SetText(compiler_output.GetText() + new_output);
-                compiler_output.SetCursorPosition({compiler_output.GetTotalLines(), 1});
+                // update compiler output
+                compiler_output.SetText(move(total_output));
+                if(first_error_marker_line)
+                    compiler_output.SetCursorPosition({first_error_marker_line, 1});
+                else
+                    compiler_output.SetCursorPosition({compiler_output.GetTotalLines(), 1});
             }
             if(last_compiler_exitcode)
                 ImGui::TextColored({1, 0, 0, 1}, "Compiler output - ERROR!");
@@ -165,6 +180,7 @@ cout << a << endl;
                                       ImVec2(-1.f, -1.f), ImGuiInputTextFlags_ReadOnly);
             ImGui::EndChild();
 
+            // bottom buttons
             static rcrl::Mode mode = rcrl::ONCE;
             ImGui::Text("Default mode:");
             ImGui::SameLine();
@@ -183,7 +199,7 @@ cout << a << endl;
                 history.SetText("#include \"precompiled_for_plugin.h\"\n");
             }
 
-            // if the user has submitted code
+            // if the user has submitted code for compilation
             ImGuiIO& io = ImGui::GetIO();
             compile |= (io.KeysDown[GLFW_KEY_ENTER] && io.KeyCtrl);
             if(compile && !rcrl::is_compiling() && editor.GetText().size() > 1) {
@@ -192,7 +208,7 @@ cout << a << endl;
 
                 // submit to the RCRL engine
                 if(rcrl::submit_code(editor.GetText(), mode, &used_default_mode)) {
-					default_mode = mode;
+                    default_mode = mode;
                     // make the editor code untouchable while compiling
                     editor.SetReadOnly(true);
                 } else {
@@ -208,7 +224,7 @@ cout << a << endl;
             editor.SetReadOnly(false);
 
             if(last_compiler_exitcode) {
-                // errors occurred
+                // errors occurred - set cursor to the last line of the erroneous code
                 editor.SetCursorPosition({editor.GetTotalLines(), 0});
             } else {
                 // append to the history and focus last line
@@ -216,7 +232,8 @@ cout << a << endl;
                 auto history_text = history.GetText();
                 if(history_text.size() && history_text.back() != '\n')
                     history_text += '\n';
-				if(used_default_mode)
+                // if the default mode was used - add an extra comment before the code to the history for clarity
+                if(used_default_mode)
                     history_text += default_mode == rcrl::GLOBAL ? "// global\n" :
                                                                    (default_mode == rcrl::VARS ? "// vars\n" : "// once\n");
                 history.SetText(history_text + editor.GetText());
