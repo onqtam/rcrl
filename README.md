@@ -12,8 +12,6 @@ TODO:
 - better GUI
 - document the API - like any specifics for each call
 - something more interesting should happen in the background for the demo
-- parameterize which headers should be included
 - stress test everything (+unit tests for the parsing function of vars)
-- add a PCH through cmake
 - make a demo video showcasing the project
 - blog about it (with all the notes in my .txt file in google drive)

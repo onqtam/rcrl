@@ -14,7 +14,7 @@ void My_ImGui_ImplGlfwGL2_KeyCallback(GLFWwindow* w, int key, int scancode, int 
     // call the callback from the imgui/glfw integration
     ImGui_ImplGlfwGL2_KeyCallback(w, key, scancode, action, mods);
 
-    // add the '\r' char when 'enter' is pressed - for ImGuiColorTextEdit
+    // add the '\n' char when 'enter' is pressed - for ImGuiColorTextEdit
     ImGuiIO& io = ImGui::GetIO();
     if(key == GLFW_KEY_ENTER && !io.KeyCtrl && (action == GLFW_PRESS || action == GLFW_REPEAT))
         io.AddInputCharacter((unsigned short)'\n');
@@ -47,6 +47,7 @@ int main() {
     TextEditor history;
     history.SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus());
     history.SetReadOnly(true);
+	history.SetText("#include \"precompiled_for_plugin.h\"\n");
 
     // an editor instance - for the core being currently written
     TextEditor editor;
@@ -141,7 +142,7 @@ cout << a << endl;
                 rcrl::cleanup_plugins();
                 compiler_output.clear();
                 redirected_stdout.clear();
-                history.SetText("\r");
+				history.SetText("#include \"precompiled_for_plugin.h\"\n");
             }
 
             // if the user has submitted code

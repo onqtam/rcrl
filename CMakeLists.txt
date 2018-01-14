@@ -6,6 +6,10 @@ project(RCRL)
 # global flags and directories setup
 ####################################################################################################
 
+# precompiled header macro - taken (and slightly modified - removed "-std=..." stuff) from here: https://github.com/iboB/cmake-pch
+include(precompiled_header.cmake)
+
+# directories - everything goes in the same place
 set(OUTPUT_DIR ${PROJECT_BINARY_DIR}/bin/)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR})
@@ -32,7 +36,7 @@ add_executable(host_app
     src/main.cpp
     src/host_app.cpp
     src/host_app.h
-# rcrl sources
+# RCRL sources
     src/rcrl/rcrl.h
     src/rcrl/rcrl.cpp
     src/rcrl/rcrl_parser.h
@@ -50,13 +54,12 @@ target_include_directories(host_app PUBLIC src)
 
 # enable warnings
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    # TODO: -Weverything for clang
     target_compile_options(host_app PRIVATE -Wall -Wextra)
 else()
     target_compile_options(host_app PRIVATE /W4)
 endif()
 
-# defines needed for easier RCRL integration
+# defines needed for RCRL integration
 target_compile_definitions(host_app PRIVATE "RCRL_PLUGIN_FILE=\"${plugin_file}\"")
 target_compile_definitions(host_app PRIVATE "RCRL_PLUGIN_NAME=\"plugin\"")
 target_compile_definitions(host_app PRIVATE "RCRL_BUILD_FOLDER=\"${PROJECT_BINARY_DIR}\"")
@@ -73,7 +76,8 @@ target_compile_definitions(host_app PRIVATE "HOST_APP")
 # the plugin that will be used for RCRL
 ####################################################################################################
 
-add_library(plugin SHARED EXCLUDE_FROM_ALL ${plugin_file})
+# the plugin target that will be recompiled and loaded by RCRL
+add_library(plugin SHARED EXCLUDE_FROM_ALL ${plugin_file} src/precompiled_for_plugin.cpp)
 # link the RCRL plugin with the host app so we can call stuff from it
 target_link_libraries(plugin host_app)
 # exclude it even for Visual Studio when building the whole solution (EXCLUDE_FROM_ALL is not enough)
@@ -90,6 +94,8 @@ if(MSVC)
     # can also use /PDBALTPATH - https://blog.molecular-matters.com/2014/05/10/using-runtime-compiled-c-code-as-a-scripting-language-under-the-hood/
     set_target_properties(plugin PROPERTIES LINK_FLAGS /DEBUG:NONE)
 endif()
+# add a precompiled header
+add_precompiled_header(plugin ${CMAKE_CURRENT_SOURCE_DIR}/src/precompiled_for_plugin.h ${CMAKE_CURRENT_SOURCE_DIR}/src/precompiled_for_plugin.cpp)
 
 ####################################################################################################
 # third party libs
