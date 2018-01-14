@@ -47,8 +47,8 @@ typedef void* RCRL_Dynlib;
 
 using namespace std;
 
-map<string, void*>                   persistence;
-vector<pair<void*, void (*)(void*)>> deleters;
+static map<string, void*>                   persistence;
+static vector<pair<void*, void (*)(void*)>> deleters;
 
 // for use by the rcrl plugin
 RCRL_SYMBOL_EXPORT void*& rcrl_get_persistence(const char* var_name) { return persistence[var_name]; }
@@ -57,16 +57,16 @@ RCRL_SYMBOL_EXPORT void   rcrl_add_deleter(void* address, void (*deleter)(void*)
 namespace rcrl
 {
 // global state
-vector<pair<string, RCRL_Dynlib>>   plugins;
-unique_ptr<TinyProcessLib::Process> compiler_process;
-string                              compiler_output;
-mutex                               compiler_output_mut;
-bool                                last_compile_successful = false;
+static vector<pair<string, RCRL_Dynlib>>   plugins;
+static unique_ptr<TinyProcessLib::Process> compiler_process;
+static string                              compiler_output;
+static mutex                               compiler_output_mut;
+static bool                                last_compile_successful = false;
 // holds code only for global and vars sections which have already been successfully compiled and loaded
-vector<string> compiled_sections;
+static vector<string> compiled_sections;
 // holds all the sections which were last submitted for compilation - on success and if the
 // new plugin is loaded global and vars sections will be put in the compiled_sections list
-vector<pair<string, Mode>> uncompiled_sections;
+static vector<pair<string, Mode>> uncompiled_sections;
 
 // called asynchronously by the compilation process
 void output_appender(const char* bytes, size_t n) {
