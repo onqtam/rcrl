@@ -106,6 +106,8 @@ vector<Section> parse_sections_and_remove_comments(string& out, Mode default_mod
             }
         }
         if(c == '\n') {
+            ++line;
+
             if(in_single_line_comment && text[i - 1] != '\\') {
                 in_single_line_comment = false;
 
@@ -129,16 +131,14 @@ vector<Section> parse_sections_and_remove_comments(string& out, Mode default_mod
                 };
 
                 if(directive_finder("global"))
-                    section_starts.push_back({i, line, GLOBAL});
+                    section_starts.push_back({i, line - 1, GLOBAL});
                 if(directive_finder("vars"))
-                    section_starts.push_back({i, line, VARS});
+                    section_starts.push_back({i, line - 1, VARS});
                 if(directive_finder("once"))
-                    section_starts.push_back({i, line, ONCE});
+                    section_starts.push_back({i, line - 1, ONCE});
 
                 continue;
             }
-
-            line++;
         }
 
         if(in_comment) {
@@ -170,7 +170,7 @@ vector<VariableDefinition> parse_vars(const string& text, size_t line_start) {
     bool               in_var               = false;
     size_t             current_var_name_end = 0;
 
-    int line   = line_start + 1;
+    int line   = line_start;
     int column = 1;
 
     auto parse_error = [&](const char* msg) {
@@ -309,10 +309,10 @@ vector<VariableDefinition> parse_vars(const string& text, size_t line_start) {
                 semicolons.push_back(i);
             }
             if(c == '\n') {
-                line++;
+                ++line;
                 column = 1;
             } else {
-                column++;
+                ++column;
             }
         }
 
