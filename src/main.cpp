@@ -7,7 +7,7 @@
 
 using namespace std;
 
-// my own callback - need to add the carriage return symbols to make ImGuiColorTextEdit work when 'enter' is pressed
+// my own callback - need to add the new line symbols to make ImGuiColorTextEdit work when 'enter' is pressed
 void My_ImGui_ImplGlfwGL2_KeyCallback(GLFWwindow* w, int key, int scancode, int action, int mods) {
     // call the callback from the imgui/glfw integration
     ImGui_ImplGlfwGL2_KeyCallback(w, key, scancode, action, mods);
@@ -43,18 +43,17 @@ int main() {
     // this is the precompiled header for the plugin in this demo project so it's contents are always there for the plugin
     history.SetText("#include \"precompiled_for_plugin.h\"\n");
 
-    // an editor instance - for the core being currently written
-    TextEditor editor;
-    editor.SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus());
-
-    // compiler output - with an empty language definition and a custom palette
+	// an editor instance - compiler output - with an empty language definition and a custom palette
     TextEditor compiler_output;
     compiler_output.SetLanguageDefinition(TextEditor::LanguageDefinition());
     compiler_output.SetReadOnly(true);
     auto custom_palette = TextEditor::GetDarkPalette();
-    custom_palette[11] =
-            0xcccccccc; // override the milti line comment color since all compiler output is treated as such by default
+    custom_palette[(int)TextEditor::PaletteIndex::MultiLineComment] = 0xcccccccc; // text is treated as such by default
     compiler_output.SetPalette(custom_palette);
+
+	// an editor instance - for the core being currently written
+	TextEditor editor;
+	editor.SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus());
 
     // set some initial code
     editor.SetText(R"raw(cout << "hello!\n";
@@ -94,7 +93,7 @@ cout << a << endl;
 
         if(ImGui::Begin("console", nullptr,
                         ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
-            const auto text_field_height = ImGui::GetTextLineHeight() * 15;
+            const auto text_field_height = ImGui::GetTextLineHeight() * 16;
             // top left part
             ImGui::BeginChild("history code", ImVec2(display_w * 0.45f, text_field_height));
             auto hcpos = editor.GetCursorPosition();
@@ -176,6 +175,7 @@ cout << a << endl;
                 rcrl::cleanup_plugins();
                 compiler_output.SetText("");
                 redirected_stdout.clear();
+				last_compiler_exitcode = 0;
                 history.SetText("#include \"precompiled_for_plugin.h\"\n");
             }
 
@@ -210,6 +210,7 @@ cout << a << endl;
                 // append to the history and focus last line
                 history.SetCursorPosition({history.GetTotalLines(), 1});
                 auto history_text = history.GetText();
+				// add a new line (if one is missing) to the code that will go to the history for readability
                 if(history_text.size() && history_text.back() != '\n')
                     history_text += '\n';
                 // if the default mode was used - add an extra comment before the code to the history for clarity
