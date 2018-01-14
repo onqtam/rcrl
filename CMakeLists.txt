@@ -7,7 +7,7 @@ project(RCRL)
 ####################################################################################################
 
 # precompiled header macro - taken (and slightly modified - removed "-std=..." stuff) from here: https://github.com/iboB/cmake-pch
-include(precompiled_header.cmake)
+include(src/third_party/precompiled_header.cmake)
 
 # directories - everything goes in the same place
 set(OUTPUT_DIR ${PROJECT_BINARY_DIR}/bin/)
