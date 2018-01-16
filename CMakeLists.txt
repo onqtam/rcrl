@@ -102,7 +102,7 @@ add_precompiled_header(plugin ${CMAKE_CURRENT_SOURCE_DIR}/src/precompiled_for_pl
 ####################################################################################################
 
 # imgui
-add_library(imgui STATIC src/third_party/imgui/imgui.cpp src/third_party/imgui/imgui_draw.cpp src/third_party/imgui/imgui_demo.cpp)
+add_library(imgui STATIC src/third_party/imgui/imgui.cpp src/third_party/imgui/imgui_draw.cpp)
 target_include_directories(imgui INTERFACE src/third_party/imgui)
 
 # ImGuiColorTextEdit
