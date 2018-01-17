@@ -7,6 +7,8 @@
 
 using namespace std;
 
+bool g_console_visible = true;
+
 // my own callback - need to add the new line symbols to make ImGuiColorTextEdit work when 'enter' is pressed
 void My_ImGui_ImplGlfwGL2_KeyCallback(GLFWwindow* w, int key, int scancode, int action, int mods) {
     // call the callback from the imgui/glfw integration
@@ -16,6 +18,11 @@ void My_ImGui_ImplGlfwGL2_KeyCallback(GLFWwindow* w, int key, int scancode, int 
     ImGuiIO& io = ImGui::GetIO();
     if(key == GLFW_KEY_ENTER && !io.KeyCtrl && (action == GLFW_PRESS || action == GLFW_REPEAT))
         io.AddInputCharacter((unsigned short)'\n');
+
+    // this should be commented until this is fixed: https://github.com/BalazsJako/ImGuiColorTextEdit/issues/8
+    if(!io.WantCaptureKeyboard && !io.WantTextInput && key == GLFW_KEY_GRAVE_ACCENT &&
+       (action == GLFW_PRESS || action == GLFW_REPEAT))
+        g_console_visible = !g_console_visible;
 }
 
 int main() {
@@ -43,17 +50,17 @@ int main() {
     // this is the precompiled header for the plugin in this demo project so it's contents are always there for the plugin
     history.SetText("#include \"precompiled_for_plugin.h\"\n");
 
-	// an editor instance - compiler output - with an empty language definition and a custom palette
+    // an editor instance - compiler output - with an empty language definition and a custom palette
     TextEditor compiler_output;
     compiler_output.SetLanguageDefinition(TextEditor::LanguageDefinition());
     compiler_output.SetReadOnly(true);
-    auto custom_palette = TextEditor::GetDarkPalette();
+    auto custom_palette                                             = TextEditor::GetDarkPalette();
     custom_palette[(int)TextEditor::PaletteIndex::MultiLineComment] = 0xcccccccc; // text is treated as such by default
     compiler_output.SetPalette(custom_palette);
 
-	// an editor instance - for the core being currently written
-	TextEditor editor;
-	editor.SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus());
+    // an editor instance - for the core being currently written
+    TextEditor editor;
+    editor.SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus());
 
     // set some initial code
     editor.SetText(R"raw(cout << "hello!\n";
@@ -91,7 +98,8 @@ cout << a << endl;
         ImGui::SetNextWindowSize({(float)display_w, -1.f}, ImGuiCond_Always);
         ImGui::SetNextWindowPos({0.f, 0.f}, ImGuiCond_Always);
 
-        if(ImGui::Begin("console", nullptr,
+        if(g_console_visible &&
+           ImGui::Begin("console", nullptr,
                         ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
             const auto text_field_height = ImGui::GetTextLineHeight() * 16;
             // top left part
@@ -175,7 +183,7 @@ cout << a << endl;
                 rcrl::cleanup_plugins();
                 compiler_output.SetText("");
                 redirected_stdout.clear();
-				last_compiler_exitcode = 0;
+                last_compiler_exitcode = 0;
                 history.SetText("#include \"precompiled_for_plugin.h\"\n");
             }
 
@@ -195,8 +203,8 @@ cout << a << endl;
                     last_compiler_exitcode = 1;
                 }
             }
+            ImGui::End();
         }
-        ImGui::End();
 
         // if there is a spawned compiler process and it has just finished
         if(rcrl::try_get_exit_status_from_compile(last_compiler_exitcode)) {
@@ -210,7 +218,7 @@ cout << a << endl;
                 // append to the history and focus last line
                 history.SetCursorPosition({history.GetTotalLines(), 1});
                 auto history_text = history.GetText();
-				// add a new line (if one is missing) to the code that will go to the history for readability
+                // add a new line (if one is missing) to the code that will go to the history for readability
                 if(history_text.size() && history_text.back() != '\n')
                     history_text += '\n';
                 // if the default mode was used - add an extra comment before the code to the history for clarity
