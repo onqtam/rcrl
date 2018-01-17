@@ -23,15 +23,14 @@
 
 // for variable definitions with persistence in the vars section
 #define RCRL_VAR(type, name, ...)                                                                                           \
-    RCRL_HANDLE_BRACED_VA_ARGS(type)* rcrl_##name##_ptr = []() {                                                            \
+    RCRL_HANDLE_BRACED_VA_ARGS(type)& name = *[]() {                                                                        \
         auto& address = rcrl_get_persistence(#name);                                                                        \
         if(address == nullptr) {                                                                                            \
             address = (void*)new RCRL_HANDLE_BRACED_VA_ARGS(type) __VA_ARGS__;                                              \
             rcrl_add_deleter(address, [](void* ptr) { delete static_cast<RCRL_HANDLE_BRACED_VA_ARGS(type)*>(ptr); });       \
         }                                                                                                                   \
         return static_cast<RCRL_HANDLE_BRACED_VA_ARGS(type)*>(address);                                                     \
-    }();                                                                                                                    \
-    RCRL_HANDLE_BRACED_VA_ARGS(type)& name = *rcrl_##name##_ptr
+    }()
 
 // for variable definitions with auto type - using a lambda and decltype of a call
 // to it to figure out the type that the initializer expression would have yelded
