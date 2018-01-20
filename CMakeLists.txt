@@ -87,8 +87,10 @@ set_target_properties(plugin PROPERTIES PREFIX "")
 if(APPLE)
     # weird flags to make it link to the executable - see this: https://stackoverflow.com/questions/48176641
     set_target_properties(plugin PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
-endif()
-if(MSVC)
+elseif(UNIX)
+    # add -fPIC - on some architectures under linux the precompiled header for the plugin target couldn't be used
+    target_compile_options(plugin PRIVATE -fPIC)
+elseif(MSVC)
     # we don't want .pdb files for the plugin because when we are within Visual Studio and debugging the application it locks
     # the .pdb for the original .dll and subsequent compiles fail even though we have loaded copies of the original .dll
     # can also use /PDBALTPATH - https://blog.molecular-matters.com/2014/05/10/using-runtime-compiled-c-code-as-a-scripting-language-under-the-hood/
