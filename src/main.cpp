@@ -186,6 +186,10 @@ cout << a << endl;
                 last_compiler_exitcode = 0;
                 history.SetText("#include \"precompiled_for_plugin.h\"\n");
             }
+			ImGui::SameLine();
+			ImGui::Dummy({20, 0});
+			ImGui::SameLine();
+			ImGui::Text("Use Ctrl+Enter to submit code");
 
             // if the user has submitted code for compilation
             ImGuiIO& io = ImGui::GetIO();
