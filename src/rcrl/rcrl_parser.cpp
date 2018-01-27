@@ -243,8 +243,11 @@ vector<VariableDefinition> parse_vars(const string& text, size_t line_start) {
 
                     if(current_var.type.size() == 0)
                         throw runtime_error(parse_error("couldn't parse type for var"));
-                    if(current_var.type.back() == '&')
-                        throw runtime_error(parse_error("references not supported by RCRL"));
+
+                    if(current_var.type.back() == '&') {
+                        current_var.is_reference = true;
+                        current_var.type.pop_back();
+                    }
 
                     // detect "auto"/"const auto" types and put them in a canonical form with just 1 space between them
                     auto tokens = split(current_var.type);
@@ -267,8 +270,12 @@ vector<VariableDefinition> parse_vars(const string& text, size_t line_start) {
 
                     if(current_var.initializer.size() && current_var.initializer.front() != '(' &&
                        current_var.initializer.front() != '{') {
-                        current_var.initializer = "(" + current_var.initializer + ")";
+                        // if a reference - get the address of the result of the initializer since we are using a pointer under the hood
+                        current_var.initializer = (current_var.is_reference ? "(&" : "(") + current_var.initializer + ")";
                     }
+
+                    if(current_var.is_reference && current_var.initializer.size() == 0)
+                        throw runtime_error(parse_error("references must be initialized"));
 
                     // TODO: remove debug prints
                     cout << current_var.type << endl;

@@ -22,14 +22,14 @@
 #define RCRL_ONCE_END return 0; }();
 
 // for variable definitions with persistence in the vars section
-#define RCRL_VAR(type, name, ...)                                                                                           \
-    RCRL_HANDLE_BRACED_VA_ARGS(type)& name = *[]() {                                                                        \
+#define RCRL_VAR(type, final_type, deref, name, ...)                                                                        \
+    RCRL_HANDLE_BRACED_VA_ARGS(final_type)& name = *[]() {                                                                  \
         auto& address = rcrl_get_persistence(#name);                                                                        \
         if(address == nullptr) {                                                                                            \
             address = (void*)new RCRL_HANDLE_BRACED_VA_ARGS(type) __VA_ARGS__;                                              \
             rcrl_add_deleter(address, [](void* ptr) { delete static_cast<RCRL_HANDLE_BRACED_VA_ARGS(type)*>(ptr); });       \
         }                                                                                                                   \
-        return static_cast<RCRL_HANDLE_BRACED_VA_ARGS(type)*>(address);                                                     \
+        return deref static_cast<RCRL_HANDLE_BRACED_VA_ARGS(type)*>(address);                                               \
     }()
 
 // for variable definitions with auto type - using a lambda and decltype of a call
@@ -39,7 +39,8 @@
         constness auto temp assignment __VA_ARGS__;                                                                         \
         return temp;                                                                                                        \
     };                                                                                                                      \
-    RCRL_VAR((constness decltype(rcrl_##name##_type_returner())), name, __VA_ARGS__)
+    RCRL_VAR((constness decltype(rcrl_##name##_type_returner())), (constness decltype(rcrl_##name##_type_returner())),      \
+             RCRL_EMPTY(), name, __VA_ARGS__)
 
 // the symbols for persistence which the host app should export
 RCRL_SYMBOL_IMPORT void*& rcrl_get_persistence(const char* var_name);

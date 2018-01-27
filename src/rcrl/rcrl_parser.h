@@ -11,7 +11,8 @@ struct VariableDefinition
     std::string type;
     std::string name;
     std::string initializer;
-    bool        has_assignment = false;
+	bool        has_assignment = false;
+	bool        is_reference = false;
 };
 
 struct Section

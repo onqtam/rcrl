@@ -18,3 +18,8 @@ void draw() {
 
     glEnd();
 }
+
+int& getInt() {
+	static int a = 42;
+	return a;
+}

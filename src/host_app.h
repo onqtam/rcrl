@@ -19,3 +19,5 @@
 
 HOST_API void print();
 HOST_API void draw();
+
+HOST_API int& getInt();

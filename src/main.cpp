@@ -65,6 +65,7 @@ int main() {
     // set some initial code
     editor.SetText(R"raw(cout << "hello!\n";
 // global
+#include "host_app.h"
 int f() { return 42; }
 // vars
 int a = f();

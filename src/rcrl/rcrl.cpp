@@ -139,13 +139,15 @@ bool submit_code(string code, Mode default_mode, bool* used_default_mode) {
                 section_code.clear();
 
                 for(const auto& var : vars) {
-                    if(var.type == "auto" || var.type == "const auto")
+                    if(var.type == "auto" || var.type == "const auto") {
                         section_code += "RCRL_VAR_AUTO(" + var.name + ", " +
                                         (var.type == "auto" ? "RCRL_EMPTY()" : "const") + ", " +
                                         (var.has_assignment ? "=" : "RCRL_EMPTY()") + ", " + var.initializer + ");\n";
-                    else
-                        section_code += "RCRL_VAR((" + var.type + "), " + var.name + ", " +
+                    } else {
+                        section_code += "RCRL_VAR((" + var.type + (var.is_reference ? "*" : "") + "), (" + var.type + "), " +
+                                        (var.is_reference ? "*" : "RCRL_EMPTY()") + ", " + var.name + ", " +
                                         (var.initializer.size() ? var.initializer : "RCRL_EMPTY()") + ");\n";
+                    }
                 }
             } catch(exception& e) {
                 output_appender(e.what(), strlen(e.what()));
