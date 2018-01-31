@@ -111,13 +111,6 @@ target_include_directories(imgui INTERFACE src/third_party/imgui)
 add_library(ImGuiColorTextEdit STATIC src/third_party/ImGuiColorTextEdit/TextEditor.cpp src/third_party/ImGuiColorTextEdit/TextEditor.h)
 target_link_libraries(ImGuiColorTextEdit PRIVATE imgui)
 
-# hack until this gets merged: https://github.com/BalazsJako/ImGuiColorTextEdit/pull/7
-if(MSVC)
-    target_compile_options(ImGuiColorTextEdit PRIVATE /FI"${CMAKE_CURRENT_SOURCE_DIR}/src/third_party/hack_for_imgui_color_text_edit.h")
-else()
-    target_compile_options(ImGuiColorTextEdit PRIVATE -include ${CMAKE_CURRENT_SOURCE_DIR}/src/third_party/hack_for_imgui_color_text_edit.h)
-endif()
-
 # glfw
 set(GLFW_BUILD_DOCS     OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
