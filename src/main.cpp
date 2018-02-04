@@ -11,15 +11,17 @@ bool g_console_visible = true;
 
 // my own callback - need to add the new line symbols to make ImGuiColorTextEdit work when 'enter' is pressed
 void My_ImGui_ImplGlfwGL2_KeyCallback(GLFWwindow* w, int key, int scancode, int action, int mods) {
-    // call the callback from the imgui/glfw integration
-    ImGui_ImplGlfwGL2_KeyCallback(w, key, scancode, action, mods);
+    // calling the callback from the imgui/glfw integration only if not a dash because when writing an underscore (with shift down)
+	// ImGuiColorTextEdit does a paste - see this for more info: https://github.com/BalazsJako/ImGuiColorTextEdit/issues/18
+	if(key != '-')
+		ImGui_ImplGlfwGL2_KeyCallback(w, key, scancode, action, mods);
 
     // add the '\n' char when 'enter' is pressed - for ImGuiColorTextEdit
     ImGuiIO& io = ImGui::GetIO();
     if(key == GLFW_KEY_ENTER && !io.KeyCtrl && (action == GLFW_PRESS || action == GLFW_REPEAT))
         io.AddInputCharacter((unsigned short)'\n');
 
-    // this should be commented until this is fixed: https://github.com/BalazsJako/ImGuiColorTextEdit/issues/8
+	// console toggle
     if(!io.WantCaptureKeyboard && !io.WantTextInput && key == GLFW_KEY_GRAVE_ACCENT &&
        (action == GLFW_PRESS || action == GLFW_REPEAT))
         g_console_visible = !g_console_visible;
