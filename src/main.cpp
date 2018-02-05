@@ -1,9 +1,12 @@
-#include "host_app.h"
-#include "rcrl/rcrl.h"
+#include <chrono>
+#include <thread>
 
 #include <GLFW/glfw3.h>
 #include <third_party/ImGuiColorTextEdit/TextEditor.h>
 #include <third_party/imgui/examples/opengl2_example/imgui_impl_glfw.h>
+
+#include "host_app.h"
+#include "rcrl/rcrl.h"
 
 using namespace std;
 
@@ -86,6 +89,11 @@ cout << a << endl;
     // if the default mode was used for the first section
     bool       used_default_mode = false;
     rcrl::Mode default_mode      = rcrl::ONCE;
+
+	// limiting to 50 fps because on some systems the whole machine started lagging when the demo was turned on
+	using frames = chrono::duration<int64_t, ratio<1, 50>>;
+	auto nextFrame = chrono::system_clock::now();
+	auto lastFrame = nextFrame - frames{1};
 
     // main loop
     while(!glfwWindowShouldClose(window)) {
@@ -259,6 +267,11 @@ cout << a << endl;
         // finalize rendering
         ImGui::Render();
         glfwSwapBuffers(window);
+
+		// do the frame rate limiting
+		this_thread::sleep_until(nextFrame);
+        lastFrame = nextFrame;
+		nextFrame += frames{1};
     }
 
     // cleanup
