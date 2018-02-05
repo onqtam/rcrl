@@ -39,7 +39,7 @@
     }
 
 // for variable definitions with auto type - using a lambda and decltype of a call
-// to it to figure out the type that the initializer expression would have yelded
+// to it to figure out the type that the initializer expression would have yielded
 #define RCRL_VAR_AUTO(name, constness, assignment, ...)                                                                     \
     RCRL_AUTO_LAMBDA(name, constness, assignment, __VA_ARGS__);                                                             \
     RCRL_VAR((constness decltype(rcrl_##name##_type_returner())), (constness decltype(rcrl_##name##_type_returner())),      \
