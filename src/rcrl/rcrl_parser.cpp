@@ -244,9 +244,14 @@ vector<VariableDefinition> parse_vars(const string& text, size_t line_start) {
                     if(current_var.type.size() == 0)
                         throw runtime_error(parse_error("couldn't parse type for var"));
 
-                    if(current_var.type.back() == '&') {
+                    if(current_var.type.size() > 1 && current_var.type.back() == '&') {
                         current_var.is_reference = true;
                         current_var.type.pop_back();
+						trim(current_var.type);
+
+						// if the type was ending with &&
+						if (current_var.type.back() == '&')
+							throw runtime_error(parse_error("rvalue references as local variables not supported!"));
                     }
 
                     // detect "auto"/"const auto" types and put them in a canonical form with just 1 space between them
@@ -260,18 +265,22 @@ vector<VariableDefinition> parse_vars(const string& text, size_t line_start) {
                 if(c == ';' && in_var) {
                     current_var.initializer = text.substr(current_var_name_end, i - current_var_name_end);
                     trim(current_var.initializer);
-                    if(current_var.initializer.size() && current_var.initializer.front() == '=') {
-                        current_var.initializer.erase(current_var.initializer.begin());
-                        current_var.has_assignment = true;
-                        trim(current_var.initializer);
-                        if(current_var.initializer.size() == 0)
-                            throw runtime_error(parse_error("no initializer code between '=' and ';'"));
-                    }
 
-                    if(current_var.initializer.size() && current_var.initializer.front() != '(' &&
-                       current_var.initializer.front() != '{') {
-                        // if a reference - get the address of the result of the initializer since we are using a pointer under the hood
-                        current_var.initializer = (current_var.is_reference ? "(&" : "(") + current_var.initializer + ")";
+                    if(current_var.initializer.size()) {
+                        if(current_var.initializer.front() == '=') {
+                            current_var.initializer.erase(current_var.initializer.begin());
+                            current_var.has_assignment = true;
+                            trim(current_var.initializer);
+                            if(current_var.initializer.size() == 0)
+                                throw runtime_error(parse_error("no initializer code between '=' and ';'"));
+                        }
+						// if a reference - get the address of the result of the initializer since we are using a pointer under the hood
+                        if(current_var.is_reference)
+							current_var.initializer = "&" + current_var.initializer;
+
+						// surround the initializer with braces if there are none
+						if(current_var.initializer.front() != '(' && current_var.initializer.front() != '{')
+							current_var.initializer = "(" + current_var.initializer + ")";
                     }
 
                     if(current_var.is_reference && current_var.initializer.size() == 0)

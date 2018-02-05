@@ -8,7 +8,9 @@ Read-Compile-Run-Loop - a REPL variant for C++ (much lighter than cling)
 
 TODO:
 
-- auto&
+- try on retina displays...
+- maybe remove submodules
+- cap the main loop frame rate to 60 fps
 - error location mapping in the source code
 - better GUI
 - ??? crash handling on loading of the plugin

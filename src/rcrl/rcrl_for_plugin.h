@@ -22,25 +22,33 @@
 #define RCRL_ONCE_END return 0; }();
 
 // for variable definitions with persistence in the vars section
-#define RCRL_VAR(type, final_type, deref, name, ...)                                                                        \
+#define RCRL_VAR(alloc_type, final_type, deref, name, ...)                                                                  \
     RCRL_HANDLE_BRACED_VA_ARGS(final_type)& name = *[]() {                                                                  \
         auto& address = rcrl_get_persistence(#name);                                                                        \
         if(address == nullptr) {                                                                                            \
-            address = (void*)new RCRL_HANDLE_BRACED_VA_ARGS(type) __VA_ARGS__;                                              \
-            rcrl_add_deleter(address, [](void* ptr) { delete static_cast<RCRL_HANDLE_BRACED_VA_ARGS(type)*>(ptr); });       \
+            address = (void*)new RCRL_HANDLE_BRACED_VA_ARGS(alloc_type) __VA_ARGS__;                                        \
+            rcrl_add_deleter(address, [](void* ptr) { delete static_cast<RCRL_HANDLE_BRACED_VA_ARGS(alloc_type)*>(ptr); }); \
         }                                                                                                                   \
-        return deref static_cast<RCRL_HANDLE_BRACED_VA_ARGS(type)*>(address);                                               \
+        return deref static_cast<RCRL_HANDLE_BRACED_VA_ARGS(alloc_type)*>(address);                                         \
     }()
+
+#define RCRL_AUTO_LAMBDA(name, constness, assignment, ...)                                                                  \
+    auto rcrl_##name##_type_returner = []() -> auto {                                                                       \
+        constness auto temp assignment __VA_ARGS__;                                                                         \
+        return temp;                                                                                                        \
+    }
 
 // for variable definitions with auto type - using a lambda and decltype of a call
 // to it to figure out the type that the initializer expression would have yelded
 #define RCRL_VAR_AUTO(name, constness, assignment, ...)                                                                     \
-    auto rcrl_##name##_type_returner = []() -> auto {                                                                       \
-        constness auto temp assignment __VA_ARGS__;                                                                         \
-        return temp;                                                                                                        \
-    };                                                                                                                      \
+    RCRL_AUTO_LAMBDA(name, constness, assignment, __VA_ARGS__);                                                             \
     RCRL_VAR((constness decltype(rcrl_##name##_type_returner())), (constness decltype(rcrl_##name##_type_returner())),      \
              RCRL_EMPTY(), name, __VA_ARGS__)
+
+#define RCRL_VAR_AUTO_REF(name, constness, assignment, ...)                                                                 \
+    RCRL_AUTO_LAMBDA(name, constness, assignment, __VA_ARGS__);                                                             \
+    RCRL_VAR((constness decltype(rcrl_##name##_type_returner())), (constness decltype(*rcrl_##name##_type_returner())), *,  \
+             name, __VA_ARGS__)
 
 // the symbols for persistence which the host app should export
 RCRL_SYMBOL_IMPORT void*& rcrl_get_persistence(const char* var_name);

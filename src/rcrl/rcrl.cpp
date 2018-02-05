@@ -140,7 +140,7 @@ bool submit_code(string code, Mode default_mode, bool* used_default_mode) {
 
                 for(const auto& var : vars) {
                     if(var.type == "auto" || var.type == "const auto") {
-                        section_code += "RCRL_VAR_AUTO(" + var.name + ", " +
+                        section_code += (var.is_reference ? "RCRL_VAR_AUTO_REF(" : "RCRL_VAR_AUTO(") + var.name + ", " +
                                         (var.type == "auto" ? "RCRL_EMPTY()" : "const") + ", " +
                                         (var.has_assignment ? "=" : "RCRL_EMPTY()") + ", " + var.initializer + ");\n";
                     } else {
