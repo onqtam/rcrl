@@ -7,8 +7,6 @@
 #include <algorithm>
 #include <sstream>
 
-#include <iostream> // TODO: to remove
-
 using namespace std;
 
 namespace rcrl
@@ -285,11 +283,6 @@ vector<VariableDefinition> parse_vars(const string& text, size_t line_start) {
 
                     if(current_var.is_reference && current_var.initializer.size() == 0)
                         throw runtime_error(parse_error("references must be initialized"));
-
-                    // TODO: remove debug prints
-                    cout << current_var.type << endl;
-                    cout << current_var.name << endl;
-                    cout << current_var.initializer << endl;
 
                     // var parsed
                     out.push_back(current_var);

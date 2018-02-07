@@ -89,7 +89,6 @@ cout << "Hello!" << endl;
     auto nextFrame = chrono::system_clock::now();
 
     // add objects in scene
-    auto& objects = getObjects();
     for(int i = 0; i < 4; ++i) {
         for(int k = 0; k < 4; ++k) {
             auto& obj = addObject(-7.f + k * 5, -6.f + i * 4);
@@ -260,7 +259,7 @@ cout << "Hello!" << endl;
 
         glPushMatrix();
         glLoadIdentity();
-        glScalef(0.1, 0.1 * display_w / display_h, 0.1);
+        glScalef(0.1f, 0.1f * display_w / display_h, 0.1f);
 
         for(auto& obj : getObjects())
             obj.draw();
