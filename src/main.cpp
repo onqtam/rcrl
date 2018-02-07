@@ -15,16 +15,16 @@ bool g_console_visible = true;
 // my own callback - need to add the new line symbols to make ImGuiColorTextEdit work when 'enter' is pressed
 void My_ImGui_ImplGlfwGL2_KeyCallback(GLFWwindow* w, int key, int scancode, int action, int mods) {
     // calling the callback from the imgui/glfw integration only if not a dash because when writing an underscore (with shift down)
-	// ImGuiColorTextEdit does a paste - see this for more info: https://github.com/BalazsJako/ImGuiColorTextEdit/issues/18
-	if(key != '-')
-		ImGui_ImplGlfwGL2_KeyCallback(w, key, scancode, action, mods);
+    // ImGuiColorTextEdit does a paste - see this for more info: https://github.com/BalazsJako/ImGuiColorTextEdit/issues/18
+    if(key != '-')
+        ImGui_ImplGlfwGL2_KeyCallback(w, key, scancode, action, mods);
 
     // add the '\n' char when 'enter' is pressed - for ImGuiColorTextEdit
     ImGuiIO& io = ImGui::GetIO();
     if(key == GLFW_KEY_ENTER && !io.KeyCtrl && (action == GLFW_PRESS || action == GLFW_REPEAT))
         io.AddInputCharacter((unsigned short)'\n');
 
-	// console toggle
+    // console toggle
     if(!io.WantCaptureKeyboard && !io.WantTextInput && key == GLFW_KEY_GRAVE_ACCENT &&
        (action == GLFW_PRESS || action == GLFW_REPEAT))
         g_console_visible = !g_console_visible;
@@ -68,16 +68,10 @@ int main() {
     editor.SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus());
 
     // set some initial code
-    editor.SetText(R"raw(cout << "hello!\n";
-// global
+    editor.SetText(R"raw(// global
 #include "host_app.h"
-int f() { return 42; }
-// vars
-int a = f();
 // once
-a++;
-// once
-cout << a << endl;
+cout << "Hello!" << endl;
 )raw");
 
     // holds the standard output from while loading the plugin
@@ -90,10 +84,18 @@ cout << a << endl;
     bool       used_default_mode = false;
     rcrl::Mode default_mode      = rcrl::ONCE;
 
-	// limiting to 50 fps because on some systems the whole machine started lagging when the demo was turned on
-	using frames = chrono::duration<int64_t, ratio<1, 50>>;
-	auto nextFrame = chrono::system_clock::now();
-	auto lastFrame = nextFrame - frames{1};
+    // limiting to 50 fps because on some systems the whole machine started lagging when the demo was turned on
+    using frames   = chrono::duration<int64_t, ratio<1, 50>>;
+    auto nextFrame = chrono::system_clock::now();
+
+    // add objects in scene
+    auto& objects = getObjects();
+    for(int i = 0; i < 4; ++i) {
+        for(int k = 0; k < 4; ++k) {
+            auto& obj = addObject(-7.f + k * 5, -6.f + i * 4);
+            obj.colorize(float(i % 2), float(k % 2), 0);
+        }
+    }
 
     // main loop
     while(!glfwWindowShouldClose(window)) {
@@ -197,10 +199,10 @@ cout << a << endl;
                 last_compiler_exitcode = 0;
                 history.SetText("#include \"precompiled_for_plugin.h\"\n");
             }
-			ImGui::SameLine();
-			ImGui::Dummy({20, 0});
-			ImGui::SameLine();
-			ImGui::Text("Use Ctrl+Enter to submit code");
+            ImGui::SameLine();
+            ImGui::Dummy({20, 0});
+            ImGui::SameLine();
+            ImGui::Text("Use Ctrl+Enter to submit code");
 
             // if the user has submitted code for compilation
             ImGuiIO& io = ImGui::GetIO();
@@ -258,20 +260,20 @@ cout << a << endl;
 
         glPushMatrix();
         glLoadIdentity();
-        static float frame = 0.f;
-        frame += 1.f;
-        glRotatef(frame, 0, 0, 1);
-        draw();
+        glScalef(0.1, 0.1 * display_w / display_h, 0.1);
+
+        for(auto& obj : getObjects())
+            obj.draw();
+
         glPopMatrix();
 
         // finalize rendering
         ImGui::Render();
         glfwSwapBuffers(window);
 
-		// do the frame rate limiting
-		this_thread::sleep_until(nextFrame);
-        lastFrame = nextFrame;
-		nextFrame += frames{1};
+        // do the frame rate limiting
+        this_thread::sleep_until(nextFrame);
+        nextFrame += frames{1};
     }
 
     // cleanup

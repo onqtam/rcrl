@@ -17,7 +17,27 @@
 // can also use WINDOWS_EXPORT_ALL_SYMBOLS in CMake for Windows
 // instead of explicitly annotating each symbol in the host app
 
-HOST_API void print();
-HOST_API void draw();
+#include <vector>
 
-HOST_API int& getInt();
+class HOST_API Object
+{
+	friend HOST_API Object& addObject(float x, float y);
+
+    float m_x = 0, m_y = 0;
+    float m_r = 0.3f, m_g = 0.3f, m_b = 0.3f;
+
+    float m_rot       = 0;
+    float m_rot_speed = 1.f;
+
+    Object() = default;
+
+public:
+    void translate(float x, float y);
+    void colorize(float r, float g, float b);
+    void set_speed(float speed);
+
+    void draw();
+};
+
+HOST_API std::vector<Object>& getObjects();
+HOST_API Object& addObject(float x, float y);

@@ -1,5 +1,5 @@
 # rcrl
-Read-Compile-Run-Loop - a REPL variant for C++ (much lighter than cling)
+Read-Compile-Run-Loop - a tiny embeddable REPL analog for C++
 
 [![Windows status](https://ci.appveyor.com/api/projects/status/fp0sqit57eorgswb/branch/master?svg=true)](https://ci.appveyor.com/project/onqtam/rcrl/branch/master)
 [![Linux Status](https://travis-ci.org/onqtam/rcrl.svg?branch=master)](https://travis-ci.org/onqtam/rcrl)
@@ -9,12 +9,9 @@ Read-Compile-Run-Loop - a REPL variant for C++ (much lighter than cling)
 TODO:
 
 - try on retina displays...
-- maybe remove submodules
-- error location mapping in the source code
-- better GUI
-- ??? crash handling on loading of the plugin
-- something more interesting should happen in the background for the demo
-- document the API - like any specifics for each call
+    GLFW_COCOA_RETINA_FRAMEBUFFER
+    https://cmake.org/cmake/help/latest/prop_tgt/MACOSX_BUNDLE_INFO_PLIST.html
+
 - stress test everything (+unit tests for the parsing function of vars)
 - make a demo video showcasing the project
 - blog about it (with all the notes in my .txt file in google drive)
