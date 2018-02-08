@@ -26,6 +26,6 @@ struct Section
 std::vector<Section> parse_sections_and_remove_comments(std::string& out, Mode default_mode);
 
 // parses variables from code - for 'vars' sections
-std::vector<VariableDefinition> parse_vars(const std::string& text, size_t line_start);
+std::vector<VariableDefinition> parse_vars(const std::string& text, size_t line_start = 1);
 
 } // namespace rcrl

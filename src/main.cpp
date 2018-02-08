@@ -85,8 +85,8 @@ cout << "Hello!" << endl;
     rcrl::Mode default_mode      = rcrl::ONCE;
 
     // limiting to 50 fps because on some systems the whole machine started lagging when the demo was turned on
-    using frames   = chrono::duration<int64_t, ratio<1, 50>>;
-    auto nextFrame = chrono::system_clock::now();
+    using frames   = chrono::duration<int64_t, ratio<1, 60>>;
+    auto nextFrame = chrono::system_clock::now() + frames{0};
 
     // add objects in scene
     for(int i = 0; i < 4; ++i) {
