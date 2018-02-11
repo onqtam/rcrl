@@ -72,8 +72,11 @@ void output_appender(const char* bytes, size_t n) {
     compiler_output += string(bytes, n);
 }
 
-void cleanup_plugins() {
+std::string cleanup_plugins(bool redirect_stdout) {
     assert(!is_compiling());
+
+    if(redirect_stdout)
+        freopen(RCRL_BUILD_FOLDER "/rcrl_stdout.txt", "w", stdout);
 
     // call the deleters in reverse order
     for(auto it = deleters.rbegin(); it != deleters.rend(); ++it)
@@ -88,6 +91,22 @@ void cleanup_plugins() {
     for(auto it = plugins.rbegin(); it != plugins.rend(); ++it)
         RCRL_CloseDynlib(it->second);
 
+    string out;
+
+    if(redirect_stdout) {
+        fclose(stdout);
+        freopen("CON", "w", stdout);
+
+        FILE* f = fopen(RCRL_BUILD_FOLDER "/rcrl_stdout.txt", "rb");
+        fseek(f, 0, SEEK_END);
+        long fsize = ftell(f);
+        fseek(f, 0, SEEK_SET);
+
+        out.resize(fsize);
+        fread((void*)out.data(), fsize, 1, f);
+        fclose(f);
+    }
+
     string bin_folder(RCRL_BIN_FOLDER);
 #ifdef _WIN32
     // replace forward slash with windows style slash
@@ -97,6 +116,8 @@ void cleanup_plugins() {
     if(plugins.size())
         system((string(RCRL_System_Delete) + bin_folder + RCRL_PLUGIN_NAME "_*" RCRL_EXTENSION).c_str());
     plugins.clear();
+
+    return out;
 }
 
 bool submit_code(string code, Mode default_mode, bool* used_default_mode) {

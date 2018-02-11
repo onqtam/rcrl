@@ -22,9 +22,10 @@ enum Mode
 // Cleanup:
 // - calls the destructors of persistent variables
 // - unloads the plugins and deletes them from the filesystem
+// - can optionally redirect stdout only while unloading the plugins (for destructors) (uses a temp .txt file) - and returns it
 // Shouldn't be called if:
 // - compilation is in progress
-void cleanup_plugins();
+std::string cleanup_plugins(bool redirect_stdout = false);
 
 // Submits code for compilation:
 // - parses the code for the 3 different sections in single line comments: // global/vars/once
@@ -38,7 +39,7 @@ void cleanup_plugins();
 // Shouldn't be called if:
 // - compilation is in progress
 // - code is empty
-bool submit_code(std::string code, Mode default_mode, bool* used_default_mode = nullptr);
+bool submit_code(std::string code, Mode default_mode = ONCE, bool* used_default_mode = nullptr);
 
 // Returns any new compiler output, since it's done in a background thread (also returns parser errors)
 std::string get_new_compiler_output();

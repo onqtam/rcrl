@@ -193,9 +193,9 @@ cout << "Hello!" << endl;
             auto compile = ImGui::Button("Compile and run");
             ImGui::SameLine();
             if(ImGui::Button("Cleanup") && !rcrl::is_compiling()) {
-                rcrl::cleanup_plugins();
                 compiler_output.SetText("");
                 redirected_stdout.clear();
+				rcrl::cleanup_plugins(true);
                 last_compiler_exitcode = 0;
                 history.SetText("#include \"precompiled_for_plugin.h\"\n");
             }
