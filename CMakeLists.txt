@@ -43,7 +43,7 @@ add_executable(host_app MACOSX_BUNDLE
     src/rcrl/rcrl_parser.cpp
     src/rcrl/rcrl_for_plugin.h
 # imgui integration
-    src/third_party/imgui/examples/opengl2_example/imgui_impl_glfw.cpp
+    src/third_party/imgui_impl_glfw.cpp
 )
 
 # enable exports so the plugin can link to the executable
@@ -71,11 +71,6 @@ endif()
 
 # so the host app exports symbols from its headers
 target_compile_definitions(host_app PRIVATE "HOST_APP")
-
-# this is needed to enable retina display support under MacOS...
-if(APPLE)
-    set_target_properties(host_app PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/src/third_party/MacOSXBundleInfo.plist.in")
-endif()
 
 ####################################################################################################
 # the plugin that will be used for RCRL
