@@ -35,6 +35,10 @@ int main() {
     glfwSetErrorCallback([](int error, const char* description) { fprintf(stderr, "%d %s", error, description); });
     if(!glfwInit())
         return 1;
+
+	// use full resolution framebuffers on Retina displays - MacOS only
+	glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_TRUE);
+
     GLFWwindow* window = glfwCreateWindow(1280, 1024, "Read-Compile-Run-Loop - REPL for C++", nullptr, nullptr);
     glfwMakeContextCurrent(window);
 

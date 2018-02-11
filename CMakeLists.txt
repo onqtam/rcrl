@@ -31,7 +31,7 @@ file(WRITE ${plugin_file} "")
 # the main executable
 ####################################################################################################
 
-add_executable(host_app
+add_executable(host_app MACOSX_BUNDLE
 # host app sources
     src/main.cpp
     src/host_app.cpp
@@ -71,6 +71,11 @@ endif()
 
 # so the host app exports symbols from its headers
 target_compile_definitions(host_app PRIVATE "HOST_APP")
+
+# this is needed to enable retina display support under MacOS...
+if(APPLE)
+    set_target_properties(host_app PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/src/third_party/MacOSXBundleInfo.plist.in")
+endif()
 
 ####################################################################################################
 # the plugin that will be used for RCRL

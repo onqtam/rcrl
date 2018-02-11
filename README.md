@@ -1,5 +1,4 @@
-# rcrl
-Read-Compile-Run-Loop - a tiny embeddable REPL analog for C++
+# RCRL (Read-Compile-Run-Loop) - a tiny embeddable REPL analog for C++
 
 [![Windows status](https://ci.appveyor.com/api/projects/status/fp0sqit57eorgswb/branch/master?svg=true)](https://ci.appveyor.com/project/onqtam/rcrl/branch/master)
 [![Linux Status](https://travis-ci.org/onqtam/rcrl.svg?branch=master)](https://travis-ci.org/onqtam/rcrl)
@@ -21,3 +20,4 @@ The repository makes use of a few third party libraries and they are setup as su
 - ```git submodule update --init``` - checks out the submodules
 - ```cmake path/to/repo``` - call cmake to generate the build files
 - ```cmake --build .``` - compiles the project
+- the resulting binary is ```host_app``` in ```bin``` of the build folder
