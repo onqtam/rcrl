@@ -11,14 +11,14 @@ struct VariableDefinition
     std::string type;
     std::string name;
     std::string initializer;
-	bool        has_assignment = false;
-	bool        is_reference = false;
+    bool        has_assignment = false;
+    bool        is_reference   = false;
 };
 
 struct Section
 {
-	size_t start_idx;
-	size_t line;
+    size_t start_idx;
+    size_t line;
     Mode   mode;
 };
 

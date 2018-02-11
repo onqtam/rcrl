@@ -64,6 +64,9 @@ int main() {
     custom_palette[(int)TextEditor::PaletteIndex::MultiLineComment] = 0xcccccccc; // text is treated as such by default
     compiler_output.SetPalette(custom_palette);
 
+    // holds the standard output from while loading the plugin - same as the compiler output as a theme
+	TextEditor program_output(compiler_output);
+
     // an editor instance - for the core being currently written
     TextEditor editor;
     editor.SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus());
@@ -74,9 +77,6 @@ int main() {
 // once
 cout << "Hello!" << endl;
 )raw");
-
-    // holds the standard output from while loading the plugin
-    string redirected_stdout;
 
     // holds the exit code from the last compilation - there was an error when not 0
     int last_compiler_exitcode = 0;
@@ -110,6 +110,16 @@ cout << "Hello!" << endl;
         // console should be always fixed
         ImGui::SetNextWindowSize({(float)display_w, -1.f}, ImGuiCond_Always);
         ImGui::SetNextWindowPos({0.f, 0.f}, ImGuiCond_Always);
+
+		// sets breakpoints on the program_output instance of the text editor widget - used to highlight new output
+        auto do_breakpoints_on_output = [&](int old_line_count, const std::string& new_output) {
+            TextEditor::Breakpoints bps;
+            if(old_line_count == program_output.GetTotalLines() && new_output.size())
+                bps.insert(old_line_count);
+            for(auto curr_line = old_line_count; curr_line < program_output.GetTotalLines(); ++curr_line)
+                bps.insert(curr_line);
+            program_output.SetBreakpoints(bps);
+        };
 
         if(g_console_visible &&
            ImGui::Begin("console", nullptr,
@@ -175,9 +185,9 @@ cout << "Hello!" << endl;
             ImGui::SameLine();
             // bottom right part
             ImGui::BeginChild("program output", ImVec2(0, text_field_height));
-            ImGui::Text("Program output");
-            ImGui::InputTextMultiline("##program_output", (char*)redirected_stdout.data(), redirected_stdout.size(),
-                                      ImVec2(-1.f, -1.f), ImGuiInputTextFlags_ReadOnly);
+			auto ocpos = program_output.GetCursorPosition();
+			ImGui::Text("Program output: %3d/%-3d %3d lines", ocpos.mLine + 1, ocpos.mColumn + 1, program_output.GetTotalLines());
+			program_output.Render("Output");
             ImGui::EndChild();
 
             // bottom buttons
@@ -192,13 +202,22 @@ cout << "Hello!" << endl;
             ImGui::SameLine();
             auto compile = ImGui::Button("Compile and run");
             ImGui::SameLine();
-            if(ImGui::Button("Cleanup") && !rcrl::is_compiling()) {
+            if(ImGui::Button("Cleanup Plugins") && !rcrl::is_compiling()) {
                 compiler_output.SetText("");
-                redirected_stdout.clear();
-				rcrl::cleanup_plugins(true);
+				auto output_from_cleanup = rcrl::cleanup_plugins(true);
+				auto old_line_count = program_output.GetTotalLines();
+				program_output.SetText(program_output.GetText() + output_from_cleanup);
+				program_output.SetCursorPosition({program_output.GetTotalLines(), 0});
+
                 last_compiler_exitcode = 0;
                 history.SetText("#include \"precompiled_for_plugin.h\"\n");
+
+				// highlight the new stdout lines
+				do_breakpoints_on_output(old_line_count, output_from_cleanup);
             }
+			ImGui::SameLine();
+            if(ImGui::Button("Clear Output"))
+				program_output.SetText("");
             ImGui::SameLine();
             ImGui::Dummy({20, 0});
             ImGui::SameLine();
@@ -231,25 +250,32 @@ cout << "Hello!" << endl;
             if(last_compiler_exitcode) {
                 // errors occurred - set cursor to the last line of the erroneous code
                 editor.SetCursorPosition({editor.GetTotalLines(), 0});
-            } else {
-                // append to the history and focus last line
-                history.SetCursorPosition({history.GetTotalLines(), 1});
-                auto history_text = history.GetText();
-                // add a new line (if one is missing) to the code that will go to the history for readability
-                if(history_text.size() && history_text.back() != '\n')
-                    history_text += '\n';
-                // if the default mode was used - add an extra comment before the code to the history for clarity
-                if(used_default_mode)
-                    history_text += default_mode == rcrl::GLOBAL ? "// global\n" :
-                                                                   (default_mode == rcrl::VARS ? "// vars\n" : "// once\n");
-                history.SetText(history_text + editor.GetText());
+			} else {
+				// append to the history and focus last line
+				history.SetCursorPosition({history.GetTotalLines(), 1});
+				auto history_text = history.GetText();
+				// add a new line (if one is missing) to the code that will go to the history for readability
+				if(history_text.size() && history_text.back() != '\n')
+					history_text += '\n';
+				// if the default mode was used - add an extra comment before the code to the history for clarity
+				if(used_default_mode)
+					history_text += default_mode == rcrl::GLOBAL ? "// global\n" :
+					(default_mode == rcrl::VARS ? "// vars\n" : "// once\n");
+				history.SetText(history_text + editor.GetText());
 
-                // clear the editor
-                editor.SetText("\r"); // an empty string "" breaks it for some reason...
-                editor.SetCursorPosition({0, 0});
+				// load the new plugin
+				auto output_from_loading = rcrl::copy_and_load_new_plugin(true);
+				auto old_line_count = program_output.GetTotalLines();
+				program_output.SetText(program_output.GetText() + output_from_loading);
+				// TODO: used for auto-scroll but the cursor in the editor is removed (unfocused) sometimes from this...
+				//program_output.SetCursorPosition({program_output.GetTotalLines(), 0});
 
-                // load the new plugin
-                redirected_stdout += rcrl::copy_and_load_new_plugin(true);
+				// highlight the new stdout lines
+				do_breakpoints_on_output(old_line_count, output_from_loading);
+
+				// clear the editor
+				editor.SetText("\r"); // an empty string "" breaks it for some reason...
+				editor.SetCursorPosition({0, 0});
             }
         }
 
