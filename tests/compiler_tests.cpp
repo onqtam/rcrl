@@ -3,8 +3,6 @@
 
 #include "../src/rcrl/rcrl.h"
 
-#define REMOVE_WINDOWS_NEWLINE(a) a.erase(std::remove(a.begin(), a.end(), '\r'), a.end())
-
 TEST_CASE("single variables") {
 	int exitcode = 0;
 
@@ -19,6 +17,15 @@ TEST_CASE("single variables") {
 	rcrl::copy_and_load_new_plugin();
 }
 
+#ifdef _WIN32
+#define RCRL_SYMBOL_EXPORT __declspec(dllexport)
+#else
+#define RCRL_SYMBOL_EXPORT __attribute__((visibility("default")))
+#endif
+
+std::vector<int> g_pushed_ints;
+RCRL_SYMBOL_EXPORT void test_ctor_dtor_order(int num) { g_pushed_ints.push_back(num); }
+
 TEST_CASE("destructor order") {
 	int exitcode = 0;
 
@@ -28,11 +35,11 @@ TEST_CASE("destructor order") {
 int num_instances = 0;
 
 //global
-#include <iostream>
+RCRL_SYMBOL_IMPORT void test_ctor_dtor_order(int);
 struct S {
 	int instance;
-	S() : instance(++num_instances) { std::cout << "hi " << instance << std::endl; }
-	~S() { std::cout << "bye " << instance << std::endl; }
+	S() : instance(++num_instances) { test_ctor_dtor_order(instance); }
+	~S() { test_ctor_dtor_order(instance); }
 };
 
 //vars
@@ -41,11 +48,16 @@ S a2;
 )raw");
     while(!rcrl::try_get_exit_status_from_compile(exitcode));
 	REQUIRE_FALSE(exitcode);
-	auto output_from_loading = rcrl::copy_and_load_new_plugin(true);
-	REMOVE_WINDOWS_NEWLINE(output_from_loading);
-	CHECK(output_from_loading == "hi 1\nhi 2\n");
 
-	auto output_from_unloading = rcrl::cleanup_plugins(true);
-	REMOVE_WINDOWS_NEWLINE(output_from_unloading);
-    CHECK(output_from_unloading == "bye 2\nbye 1\n");
+	rcrl::copy_and_load_new_plugin();
+
+	REQUIRE(g_pushed_ints.size() == 2);
+	REQUIRE(g_pushed_ints[0] == 1);
+	REQUIRE(g_pushed_ints[1] == 2);
+
+	rcrl::cleanup_plugins();
+
+	REQUIRE(g_pushed_ints.size() == 4);
+	REQUIRE(g_pushed_ints[2] == 2);
+	REQUIRE(g_pushed_ints[3] == 1);
 }

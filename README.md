@@ -1,4 +1,4 @@
-# RCRL (Read-Compile-Run-Loop) - a tiny embeddable REPL analog for C++
+## RCRL (Read-Compile-Run-Loop) - a tiny embeddable REPL analog for C++
 
 [![Windows status](https://ci.appveyor.com/api/projects/status/fp0sqit57eorgswb/branch/master?svg=true)](https://ci.appveyor.com/project/onqtam/rcrl/branch/master)
 [![Linux Status](https://travis-ci.org/onqtam/rcrl.svg?branch=master)](https://travis-ci.org/onqtam/rcrl)
