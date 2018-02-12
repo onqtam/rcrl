@@ -31,7 +31,7 @@ file(WRITE ${plugin_file} "")
 # the main executable
 ####################################################################################################
 
-add_executable(host_app MACOSX_BUNDLE
+add_executable(host_app
 # host app sources
     src/main.cpp
     src/host_app.cpp
