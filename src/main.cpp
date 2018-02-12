@@ -78,7 +78,14 @@ int main() {
     editor.SetText(R"raw(// global
 #include "host_app.h"
 // once
-cout << "Hello!" << endl;
+cout << "Hello world!" << endl;
+// global
+#include <vector>
+auto getVec() { return vector<int>({1, 2, 3}); }
+// vars
+auto vec = getVec();
+// once
+cout << vec.size() << endl;
 )raw");
 
     // holds the exit code from the last compilation - there was an error when not 0
@@ -127,10 +134,10 @@ cout << "Hello!" << endl;
         if(g_console_visible &&
            ImGui::Begin("console", nullptr,
                         ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
-            const auto text_field_height = ImGui::GetTextLineHeight() * 13;
+            const auto text_field_height = ImGui::GetTextLineHeight() * 14;
             // top left part
             ImGui::BeginChild("history code", ImVec2(display_w * 0.45f, text_field_height));
-            auto hcpos = editor.GetCursorPosition();
+            auto hcpos = history.GetCursorPosition();
             ImGui::Text("Executed code: %3d/%-3d %3d lines", hcpos.mLine + 1, hcpos.mColumn + 1, editor.GetTotalLines());
             history.Render("History");
             ImGui::EndChild();
