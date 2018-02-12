@@ -17,6 +17,8 @@ TEST_CASE("single variables") {
 	rcrl::copy_and_load_new_plugin();
 }
 
+#ifndef __APPLE__
+
 #ifdef _WIN32
 #define RCRL_SYMBOL_EXPORT __declspec(dllexport)
 #else
@@ -61,3 +63,5 @@ S a2;
 	REQUIRE(g_pushed_ints[2] == 2);
 	REQUIRE(g_pushed_ints[3] == 1);
 }
+
+#endif
