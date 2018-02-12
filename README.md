@@ -5,7 +5,11 @@
 [![Language](https://img.shields.io/badge/language-C++-blue.svg)](https://isocpp.org/)
 [![License](http://img.shields.io/badge/license-MIT-blue.svg)](http://opensource.org/licenses/MIT)
 
-Checkout this [blog post](http://onqtam.com/programming/2018-02-12-read-compile-run-loop-a-tiny-repl-for-cpp/) if you are curious how this works.
+In short this is an alternative to [cling](https://github.com/root-project/cling) which is easily embeddable in any application on any platform with few restrictions.
+
+Checkout this [blog post](http://onqtam.com/programming/2018-02-12-read-compile-run-loop-a-tiny-repl-for-cpp/) if you are curious how this works and watch the video.
+
+[![youtube video showcase](http://onqtam.com/assets/images/rcrl_youtube_thumbnail.png)](https://www.youtube.com/watch?v=HscxAzFc2QY)
 
 ## Building
 
