@@ -68,6 +68,8 @@ target_compile_definitions(host_app PRIVATE "RCRL_EXTENSION=\"${CMAKE_SHARED_LIB
 if(${CMAKE_GENERATOR} MATCHES "Visual Studio" OR ${CMAKE_GENERATOR} MATCHES "Xcode")
     target_compile_definitions(host_app PRIVATE "RCRL_CONFIG=\"$<CONFIG>\"")
 endif()
+# unimportant - to construct a path to the fonts in the third party imgui folder
+target_compile_definitions(host_app PRIVATE "CMAKE_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}\"")
 
 # so the host app exports symbols from its headers
 target_compile_definitions(host_app PRIVATE "HOST_APP")
