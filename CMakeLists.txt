@@ -98,8 +98,11 @@ elseif(MSVC)
     # can also use /PDBALTPATH - https://blog.molecular-matters.com/2014/05/10/using-runtime-compiled-c-code-as-a-scripting-language-under-the-hood/
     set_target_properties(plugin PROPERTIES LINK_FLAGS /DEBUG:NONE)
 endif()
-# add a precompiled header
-add_precompiled_header(plugin ${CMAKE_CURRENT_SOURCE_DIR}/src/precompiled_for_plugin.h ${CMAKE_CURRENT_SOURCE_DIR}/src/precompiled_for_plugin.cpp)
+
+# add a precompiled header but not for MacOS
+if(NOT APPLE)
+    add_precompiled_header(plugin ${CMAKE_CURRENT_SOURCE_DIR}/src/precompiled_for_plugin.h ${CMAKE_CURRENT_SOURCE_DIR}/src/precompiled_for_plugin.cpp)
+endif()
 
 ####################################################################################################
 # third party libs

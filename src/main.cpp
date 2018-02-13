@@ -202,14 +202,13 @@ cout << vec.size() << endl;
             ImGui::EndChild();
 
             // bottom buttons
-            static rcrl::Mode mode = rcrl::ONCE;
             ImGui::Text("Default mode:");
             ImGui::SameLine();
-            ImGui::RadioButton("global", (int*)&mode, rcrl::GLOBAL);
+            ImGui::RadioButton("global", (int*)&default_mode, rcrl::GLOBAL);
             ImGui::SameLine();
-            ImGui::RadioButton("vars", (int*)&mode, rcrl::VARS);
+            ImGui::RadioButton("vars", (int*)&default_mode, rcrl::VARS);
             ImGui::SameLine();
-            ImGui::RadioButton("once", (int*)&mode, rcrl::ONCE);
+            ImGui::RadioButton("once", (int*)&default_mode, rcrl::ONCE);
             ImGui::SameLine();
             auto compile = ImGui::Button("Compile and run");
             ImGui::SameLine();
@@ -240,9 +239,21 @@ cout << vec.size() << endl;
                 // clear compiler output
                 compiler_output.SetText("");
 
+                auto getCodePrefix = [&]() {
+#ifdef __APPLE__
+                    static bool first_time_called = true;
+                    if(first_time_called) {
+                        first_time_called = false;
+                        return string("//global\n#include \"precompiled_for_plugin.h\"\n") +
+                               (default_mode == rcrl::GLOBAL ? "// global\n" :
+                                                               (default_mode == rcrl::VARS ? "// vars\n" : "// once\n"));
+                    }
+#endif
+                    return string("");
+                };
+
                 // submit to the RCRL engine
-                if(rcrl::submit_code(editor.GetText(), mode, &used_default_mode)) {
-                    default_mode = mode;
+                if(rcrl::submit_code(getCodePrefix() + editor.GetText(), default_mode, &used_default_mode)) {
                     // make the editor code untouchable while compiling
                     editor.SetReadOnly(true);
                 } else {
