@@ -135,8 +135,15 @@ cout << vec.size() << endl;
            ImGui::Begin("console", nullptr,
                         ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
             const auto text_field_height = ImGui::GetTextLineHeight() * 14;
+            static float left_right_ratio = 0.45f;
+#ifdef __APPLE__
+            ImGui::Text("Ratio between the left and right panels (retina display fix)");
+            ImGui::SameLine();
+            ImGui::SliderFloat("##ratio", &left_right_ratio, 0.1f, 0.9f);
+            ImGui::Separator();
+#endif
             // top left part
-            ImGui::BeginChild("history code", ImVec2(display_w * 0.45f, text_field_height));
+            ImGui::BeginChild("history code", ImVec2(display_w * left_right_ratio, text_field_height));
             auto hcpos = history.GetCursorPosition();
             ImGui::Text("Executed code: %3d/%-3d %3d lines", hcpos.mLine + 1, hcpos.mColumn + 1, editor.GetTotalLines());
             history.Render("History");
@@ -186,7 +193,7 @@ cout << vec.size() << endl;
             ImGui::EndChild();
 
             // bottom left part
-            ImGui::BeginChild("source code", ImVec2(display_w * 0.45f, text_field_height));
+            ImGui::BeginChild("source code", ImVec2(display_w * left_right_ratio, text_field_height));
             auto ecpos = editor.GetCursorPosition();
             ImGui::Text("RCRL Console: %3d/%-3d %3d lines | %s", ecpos.mLine + 1, ecpos.mColumn + 1, editor.GetTotalLines(),
                         editor.CanUndo() ? "*" : " ");
