@@ -5,13 +5,13 @@
 [![Language](https://img.shields.io/badge/language-C++-blue.svg)](https://isocpp.org/)
 [![License](http://img.shields.io/badge/license-MIT-blue.svg)](http://opensource.org/licenses/MIT)
 
-RCRL is a tiny engine for interactive C++ compilation and execution (implemented in just a few source files) and works on any platform with any toolchain - the main focus is easy integration. It supports:
-- interacting with the host application through dll-exported symbols
+RCRL is a tiny engine for interactive C++ compilation and execution (implemented in just a few source files - [```src/rcrl```](src/rcrl)) and works on any platform with any toolchain - the main focus is easy integration. It supports:
+- interacting with the host application through dll-exported symbols (and linking to it)
 - mixing includes, type/function definitions, persistent variable definitions and statements meant only for function scope
 
 It is an elegant alternative to [cling](https://github.com/root-project/cling) and everything that [uses it](https://github.com/inspector-repl/inspector).
 
-This repository is a demo project with GUI but the engine can be integrated in any way with host applications - code may be submitted even from external editors with full syntax highlighting and code completion! The goal was not to make a one-size-fits-all solution because that is hardly possible - but to demonstrate how the core of the RCRL engine (located in [```src/rcrl```](src/rcrl)) can be integrated.
+This repository is a demo project with GUI but the engine can be integrated in any way with host applications - code may be submitted even from external editors with full syntax highlighting and code completion! The goal was not to make a one-size-fits-all solution because that is hardly possible - but to demonstrate how the core of RCRL can be integrated.
 
 Checkout this [blog post](http://onqtam.com/programming/2018-02-12-read-compile-run-loop-a-tiny-repl-for-cpp/) if you are curious how it works and how to integrate it. And watch this video:
 
