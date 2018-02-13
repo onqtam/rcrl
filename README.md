@@ -5,7 +5,11 @@
 [![Language](https://img.shields.io/badge/language-C++-blue.svg)](https://isocpp.org/)
 [![License](http://img.shields.io/badge/license-MIT-blue.svg)](http://opensource.org/licenses/MIT)
 
-In short this is an alternative to [cling](https://github.com/root-project/cling) which is easily embeddable in any application on any platform with few restrictions.
+RCRL is a tiny engine for interactive C++ compilation and execution (implemented in just a few source files) and works on any platform with any toolchain - the main focus is easy integration. It supports:
+- interacting with the host application through dll-exported symbols
+- mixing includes, type/function definitions, persistent variable definitions and statements with side effects that are meant to reside in function scope
+
+It is an elegant alternative to [cling](https://github.com/root-project/cling) and everything that [uses it](https://github.com/inspector-repl/inspector).
 
 Checkout this [blog post](http://onqtam.com/programming/2018-02-12-read-compile-run-loop-a-tiny-repl-for-cpp/) if you are curious how this works and watch the video.
 
