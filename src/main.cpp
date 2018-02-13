@@ -116,9 +116,11 @@ cout << vec.size() << endl;
         // handle window stretching
         int display_w, display_h;
         glfwGetFramebufferSize(window, &display_w, &display_h);
+		int window_w, window_h;
+		glfwGetWindowSize(window, &window_w, &window_h);
 
         // console should be always fixed
-        ImGui::SetNextWindowSize({(float)display_w, -1.f}, ImGuiCond_Always);
+        ImGui::SetNextWindowSize({(float)window_w, -1.f}, ImGuiCond_Always);
         ImGui::SetNextWindowPos({0.f, 0.f}, ImGuiCond_Always);
 
         // sets breakpoints on the program_output instance of the text editor widget - used to highlight new output
@@ -135,15 +137,9 @@ cout << vec.size() << endl;
            ImGui::Begin("console", nullptr,
                         ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
             const auto text_field_height = ImGui::GetTextLineHeight() * 14;
-            static float left_right_ratio = 0.45f;
-#ifdef __APPLE__
-            ImGui::Text("Ratio between the left and right panels (retina display fix)");
-            ImGui::SameLine();
-            ImGui::SliderFloat("##ratio", &left_right_ratio, 0.1f, 0.9f);
-            ImGui::Separator();
-#endif
+            const float left_right_ratio = 0.45f;
             // top left part
-            ImGui::BeginChild("history code", ImVec2(display_w * left_right_ratio, text_field_height));
+            ImGui::BeginChild("history code", ImVec2(window_w * left_right_ratio, text_field_height));
             auto hcpos = history.GetCursorPosition();
             ImGui::Text("Executed code: %3d/%-3d %3d lines", hcpos.mLine + 1, hcpos.mColumn + 1, editor.GetTotalLines());
             history.Render("History");
@@ -193,7 +189,7 @@ cout << vec.size() << endl;
             ImGui::EndChild();
 
             // bottom left part
-            ImGui::BeginChild("source code", ImVec2(display_w * left_right_ratio, text_field_height));
+            ImGui::BeginChild("source code", ImVec2(window_w * left_right_ratio, text_field_height));
             auto ecpos = editor.GetCursorPosition();
             ImGui::Text("RCRL Console: %3d/%-3d %3d lines | %s", ecpos.mLine + 1, ecpos.mColumn + 1, editor.GetTotalLines(),
                         editor.CanUndo() ? "*" : " ");
