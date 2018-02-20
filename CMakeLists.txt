@@ -43,7 +43,7 @@ add_executable(host_app
     src/rcrl/rcrl_parser.cpp
     src/rcrl/rcrl_for_plugin.h
 # imgui integration
-    src/third_party/imgui/examples/opengl2_example/imgui_impl_glfw.cpp
+    src/third_party/imgui/examples/opengl2_example/imgui_impl_glfw_gl2.cpp
 )
 
 # enable exports so the plugin can link to the executable

@@ -3,7 +3,7 @@
 
 #include <GLFW/glfw3.h>
 #include <third_party/ImGuiColorTextEdit/TextEditor.h>
-#include <third_party/imgui/examples/opengl2_example/imgui_impl_glfw.h>
+#include <third_party/imgui/examples/opengl2_example/imgui_impl_glfw_gl2.h>
 
 #include "host_app.h"
 #include "rcrl/rcrl.h"
@@ -116,8 +116,8 @@ cout << vec.size() << endl;
         // handle window stretching
         int display_w, display_h;
         glfwGetFramebufferSize(window, &display_w, &display_h);
-		int window_w, window_h;
-		glfwGetWindowSize(window, &window_w, &window_h);
+        int window_w, window_h;
+        glfwGetWindowSize(window, &window_w, &window_h);
 
         // console should be always fixed
         ImGui::SetNextWindowSize({(float)window_w, -1.f}, ImGuiCond_Always);
@@ -136,8 +136,8 @@ cout << vec.size() << endl;
         if(g_console_visible &&
            ImGui::Begin("console", nullptr,
                         ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
-            const auto text_field_height = ImGui::GetTextLineHeight() * 14;
-            const float left_right_ratio = 0.45f;
+            const auto  text_field_height = ImGui::GetTextLineHeight() * 14;
+            const float left_right_ratio  = 0.45f;
             // top left part
             ImGui::BeginChild("history code", ImVec2(window_w * left_right_ratio, text_field_height));
             auto hcpos = history.GetCursorPosition();
@@ -168,7 +168,7 @@ cout << vec.size() << endl;
                         line++;
                     }
                     curr_pos = min(new_curr_pos_1, new_curr_pos_2);
-                } while(curr_pos != string::npos);
+                } while(size_t(curr_pos) != string::npos);
                 compiler_output.SetErrorMarkers(error_markers);
 
                 // update compiler output

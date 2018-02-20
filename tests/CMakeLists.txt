@@ -44,3 +44,8 @@ if(MSVC)
 endif()
 
 add_test(NAME rcrl_compiler_tests COMMAND rcrl_compiler_tests)
+
+# folders for the third party libs
+set_target_properties(test_plugin PROPERTIES FOLDER "tests")
+set_target_properties(rcrl_parser_tests PROPERTIES FOLDER "tests")
+set_target_properties(rcrl_compiler_tests PROPERTIES FOLDER "tests")
