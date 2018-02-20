@@ -48,8 +48,7 @@ int main() {
     style.WindowRounding = 0.f;
 
     ImGuiIO& io = ImGui::GetIO();
-	// commented out until this gets resolved: https://github.com/ocornut/imgui/issues/1631
-    //io.Fonts->AddFontFromFileTTF(CMAKE_SOURCE_DIR "/src/third_party/imgui/extra_fonts/Cousine-Regular.ttf", 17.f);
+	io.Fonts->AddFontFromFileTTF(CMAKE_SOURCE_DIR "/src/third_party/imgui/misc/fonts/Cousine-Regular.ttf", 17.f);
 
     // overwrite with my own callback
     glfwSetKeyCallback(window, My_ImGui_ImplGlfwGL2_KeyCallback);
