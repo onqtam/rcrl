@@ -40,6 +40,7 @@ int main() {
     glfwMakeContextCurrent(window);
 
     // Setup ImGui binding
+    ImGui::CreateContext();
     ImGui_ImplGlfwGL2_Init(window, true);
 
     // remove rounding of the console window
@@ -47,7 +48,8 @@ int main() {
     style.WindowRounding = 0.f;
 
     ImGuiIO& io = ImGui::GetIO();
-    io.Fonts->AddFontFromFileTTF(CMAKE_SOURCE_DIR "/src/third_party/imgui/extra_fonts/Cousine-Regular.ttf", 17.f);
+	// commented out until this gets resolved: https://github.com/ocornut/imgui/issues/1631
+    //io.Fonts->AddFontFromFileTTF(CMAKE_SOURCE_DIR "/src/third_party/imgui/extra_fonts/Cousine-Regular.ttf", 17.f);
 
     // overwrite with my own callback
     glfwSetKeyCallback(window, My_ImGui_ImplGlfwGL2_KeyCallback);
@@ -319,6 +321,7 @@ cout << vec.size() << endl;
 
         // finalize rendering
         ImGui::Render();
+		ImGui_ImplGlfwGL2_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);
 
         // do the frame rate limiting
@@ -329,6 +332,7 @@ cout << vec.size() << endl;
     // cleanup
     rcrl::cleanup_plugins();
     ImGui_ImplGlfwGL2_Shutdown();
+    ImGui::DestroyContext();
     glfwTerminate();
 
     return 0;
