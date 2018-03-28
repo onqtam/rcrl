@@ -8,8 +8,7 @@
 #include <cassert>
 #include <fstream>
 #include <map>
-#include <cctype>  // isspace()
-#include <cstring> // strlen()
+#include <cstring>
 #include <stdexcept>
 #include <algorithm>
 #include <sstream>
