@@ -1,5 +1,6 @@
 #include <chrono>
 #include <thread>
+#include <list>
 
 #include <GLFW/glfw3.h>
 #include <third_party/ImGuiColorTextEdit/TextEditor.h>
@@ -382,7 +383,6 @@ struct MyType {
 
 // vars
 MyType asd;
-};
 )raw", R"raw(
 
 )raw"};
