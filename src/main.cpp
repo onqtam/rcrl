@@ -10,7 +10,9 @@
 
 using namespace std;
 
-bool g_console_visible = true;
+#define RCRL_LIVE_DEMO 0
+
+bool g_console_visible = !RCRL_LIVE_DEMO;
 
 // my own callback - need to add the new line symbols to make ImGuiColorTextEdit work when 'enter' is pressed
 void My_ImGui_ImplGlfwGL2_KeyCallback(GLFWwindow* w, int key, int scancode, int action, int mods) {
@@ -48,7 +50,7 @@ int main() {
     style.WindowRounding = 0.f;
 
     ImGuiIO& io = ImGui::GetIO();
-	io.Fonts->AddFontFromFileTTF(CMAKE_SOURCE_DIR "/src/third_party/imgui/misc/fonts/Cousine-Regular.ttf", 17.f);
+    io.Fonts->AddFontFromFileTTF(CMAKE_SOURCE_DIR "/src/third_party/imgui/misc/fonts/Cousine-Regular.ttf", 17.f);
 
     // overwrite with my own callback
     glfwSetKeyCallback(window, My_ImGui_ImplGlfwGL2_KeyCallback);
@@ -75,6 +77,7 @@ int main() {
     TextEditor editor;
     editor.SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus());
 
+#if !RCRL_LIVE_DEMO
     // set some initial code
     editor.SetText(R"raw(// global
 #include "host_app.h"
@@ -88,6 +91,7 @@ auto vec = getVec();
 // once
 cout << vec.size() << endl;
 )raw");
+#endif // RCRL_LIVE_DEMO
 
     // holds the exit code from the last compilation - there was an error when not 0
     int last_compiler_exitcode = 0;
@@ -238,13 +242,23 @@ cout << vec.size() << endl;
             ImGui::Text("Use Ctrl+Enter to submit code");
 
             // if the user has submitted code for compilation
+#if RCRL_LIVE_DEMO
+            extern std::list<const char*> fragments;
+            static bool                   fragment_popped = false;
+            if(!rcrl::is_compiling() && !fragment_popped && fragments.size() && io.KeysDown[GLFW_KEY_ENTER] && io.KeyCtrl) {
+                editor.SetText(fragments.front());
+                fragments.pop_front();
+                fragment_popped = true;
+            }
+#else  // RCRL_LIVE_DEMO
             compile |= (io.KeysDown[GLFW_KEY_ENTER] && io.KeyCtrl);
+#endif // RCRL_LIVE_DEMO
             if(compile && !rcrl::is_compiling() && editor.GetText().size() > 1) {
                 // clear compiler output
                 compiler_output.SetText("");
 
                 auto getCodePrefix = [&]() {
-#ifdef __APPLE__
+#ifdef __APPLE__ // related to this: https://github.com/onqtam/rcrl/issues/4
                     static bool first_time_called = true;
                     if(first_time_called) {
                         first_time_called = false;
@@ -263,6 +277,9 @@ cout << vec.size() << endl;
                 } else {
                     last_compiler_exitcode = 1;
                 }
+#if RCRL_LIVE_DEMO
+                fragment_popped = false;
+#endif // RCRL_LIVE_DEMO
             }
             ImGui::End();
         }
@@ -320,7 +337,7 @@ cout << vec.size() << endl;
 
         // finalize rendering
         ImGui::Render();
-		ImGui_ImplGlfwGL2_RenderDrawData(ImGui::GetDrawData());
+        ImGui_ImplGlfwGL2_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);
 
         // do the frame rate limiting
@@ -336,3 +353,37 @@ cout << vec.size() << endl;
 
     return 0;
 }
+
+#if RCRL_LIVE_DEMO
+std::list<const char*> fragments = {
+        R"raw(
+// global
+#include "host_app.h"
+)raw", R"raw(
+// vars
+auto& obj = addObject(0, 0);
+)raw", R"raw(
+// once
+obj.colorize(1, 1, 1);
+)raw", R"raw(
+// once
+obj.translate(0, -3);
+obj.set_speed(7);
+)raw", R"raw(
+// global
+//#include <iostream>
+//using namespace std;
+)raw", R"raw(
+// global
+struct MyType {
+    MyType() { cout << "hello" << endl; }
+    ~MyType() { cout << "bye" << endl; }
+};
+
+// vars
+MyType asd;
+};
+)raw", R"raw(
+
+)raw"};
+#endif // RCRL_LIVE_DEMO
