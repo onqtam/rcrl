@@ -18,12 +18,12 @@
 #endif
 
 // for statements inside of a once section
-#define RCRL_ONCE_BEGIN int RCRL_ANONYMOUS(rcrl_anon_) = []() {
+#define RCRL_ONCE_BEGIN static int RCRL_ANONYMOUS(rcrl_anon_) = []() {
 #define RCRL_ONCE_END return 0; }();
 
 // for variable definitions with persistence in the vars section
 #define RCRL_VAR(alloc_type, final_type, deref, name, ...)                                                                  \
-    RCRL_HANDLE_BRACED_VA_ARGS(final_type)& name = *[]() {                                                                  \
+    static RCRL_HANDLE_BRACED_VA_ARGS(final_type)& name = *[]() {                                                           \
         auto& address = rcrl_get_persistence(#name);                                                                        \
         if(address == nullptr) {                                                                                            \
             address = (void*)new RCRL_HANDLE_BRACED_VA_ARGS(alloc_type) __VA_ARGS__;                                        \
@@ -33,7 +33,7 @@
     }()
 
 #define RCRL_AUTO_LAMBDA(name, constness, assignment, ...)                                                                  \
-    auto rcrl_##name##_type_returner = []() -> auto {                                                                       \
+    static auto rcrl_##name##_type_returner = []() -> auto {                                                                \
         constness auto temp assignment __VA_ARGS__;                                                                         \
         return temp;                                                                                                        \
     }
