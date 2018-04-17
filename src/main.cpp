@@ -240,7 +240,9 @@ cout << vec.size() << endl;
             ImGui::SameLine();
             ImGui::Dummy({20, 0});
             ImGui::SameLine();
+#if !RCRL_LIVE_DEMO
             ImGui::Text("Use Ctrl+Enter to submit code");
+#endif // RCRL_LIVE_DEMO
 
             // if the user has submitted code for compilation
 #if RCRL_LIVE_DEMO
@@ -357,25 +359,19 @@ cout << vec.size() << endl;
 
 #if RCRL_LIVE_DEMO
 std::list<const char*> fragments = {
-        R"raw(
-// global
+        R"raw(// global
 #include "host_app.h"
-)raw", R"raw(
-// vars
-auto& obj = addObject(0, 0);
-)raw", R"raw(
-// once
+)raw", R"raw(// vars
+auto& obj = addObject(0, -2);
+)raw", R"raw(// once
 obj.colorize(1, 1, 1);
-)raw", R"raw(
-// once
-obj.translate(0, -3);
+)raw", R"raw(// once
+obj.translate(0, -4);
 obj.set_speed(7);
-)raw", R"raw(
-// global
-//#include <iostream>
-//using namespace std;
-)raw", R"raw(
-// global
+)raw", R"raw(// once
+for(auto& curr : getObjects())
+    curr.set_speed(0.1);
+)raw", R"raw(// global
 struct MyType {
     MyType() { cout << "hello" << endl; }
     ~MyType() { cout << "bye" << endl; }
@@ -383,7 +379,5 @@ struct MyType {
 
 // vars
 MyType asd;
-)raw", R"raw(
-
 )raw"};
 #endif // RCRL_LIVE_DEMO
