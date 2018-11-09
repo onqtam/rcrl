@@ -13,7 +13,9 @@ RCRL is a tiny engine for interactive C++ compilation and execution (implemented
 
 It is an elegant alternative to [cling](https://github.com/root-project/cling) (and [other projects](https://github.com/inspector-repl/inspector) that are built on top of it).
 
-I gave a 30 minute talk about it at CppCon 2018 showing it integrated in a small but functional game engine - [Interactive C++ Compilation (REPL) Done in a Tiny and Embeddable Way](https://www.youtube.com/watch?v=UEuA0yuw_O0).
+I gave a 30 minute talk about it at CppCon 2018 showing it integrated in a small but functional game engine:
+
+[Interactive C++ Compilation (REPL) Done in a Tiny and Embeddable Way](https://www.youtube.com/watch?v=UEuA0yuw_O0)
 
 This repository is a demo project with GUI but the RCRL engine can be integrated in any way with host applications - code may be submitted even from external editors with full syntax highlighting and code completion! The goal was not to make a one-size-fits-all solution because that is hardly possible - but to demonstrate how the core of RCRL can be integrated.
 
