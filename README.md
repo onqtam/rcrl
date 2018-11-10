@@ -9,7 +9,9 @@ RCRL is a tiny engine for interactive C++ compilation and execution (implemented
 - mixing includes, type/function definitions, persistent variable definitions and statements meant only for function scope
 - interacting with the host application through dll-exported symbols (after linking to it)
 
-![gif showcase](http://onqtam.com/assets/images/rcrl.gif)
+Watch this youtube video to see it in action with commentary:
+
+[![youtube video showcase](http://onqtam.com/assets/images/rcrl.gif)](https://www.youtube.com/watch?v=HscxAzFc2QY)
 
 It is an elegant alternative to [cling](https://github.com/root-project/cling) (and [other projects](https://github.com/inspector-repl/inspector) that are built on top of it).
 
@@ -35,7 +37,3 @@ The repository makes use of a few third party libraries and they are setup as su
 - ```cmake path/to/repo``` - call cmake to generate the build files
 - ```cmake --build .``` - compiles the project
 - the resulting binary is ```host_app``` in ```bin``` of the build folder
-
-Watch this video to see it in action with commentary:
-
-[![youtube video showcase](http://onqtam.com/assets/images/rcrl_youtube_thumbnail.png)](https://www.youtube.com/watch?v=HscxAzFc2QY)
