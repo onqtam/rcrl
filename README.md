@@ -25,7 +25,7 @@ Checkout this [blog post](https://onqtam.com/programming/2018-02-12-read-compile
 
 ## A fork of RCRL using libclang
 
-@Islam0mar has been developing the project further [in his fork](https://github.com/Islam0mar/rcrl) where libclang is used, along with [a few other changes](https://github.com/Islam0mar/rcrl#the-new-recipe).
+[@Islam0mar](https://github.com/Islam0mar) has been developing the project further [in his fork](https://github.com/Islam0mar/rcrl) where libclang is used, along with [a few other changes](https://github.com/Islam0mar/rcrl#the-new-recipe).
 
 ## Building
 
