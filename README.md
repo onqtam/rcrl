@@ -11,17 +11,17 @@ RCRL is a tiny engine for interactive C++ compilation and execution (implemented
 
 Watch this youtube video to see it in action with commentary:
 
-[![youtube video showcase](https://onqtam.com/assets/images/rcrl.gif)](https://www.youtube.com/watch?v=HscxAzFc2QY)
+[![youtube video showcase](https://onqtam.github.io/assets/images/rcrl.gif)](https://www.youtube.com/watch?v=HscxAzFc2QY)
 
 It is an elegant alternative to [cling](https://github.com/root-project/cling) (and [other projects](https://github.com/inspector-repl/inspector) that are built on top of it).
 
 I gave a 30 minute talk about it at CppCon 2018 showing it integrated in a small but functional game engine:
 
-[![youtube cppcon video showcase](https://onqtam.com/assets/images/rcrl_youtube_cppcon_thumbnail.png)](https://www.youtube.com/watch?v=UEuA0yuw_O0)
+[![youtube cppcon video showcase](https://onqtam.github.io/assets/images/rcrl_youtube_cppcon_thumbnail.png)](https://www.youtube.com/watch?v=UEuA0yuw_O0)
 
 This repository is a demo project with GUI but the RCRL engine can be integrated in any way with host applications - code may be submitted even from external editors with full syntax highlighting and code completion! The goal was not to make a one-size-fits-all solution because that is hardly possible - but to demonstrate how the core of RCRL can be integrated.
 
-Checkout this [blog post](https://onqtam.com/programming/2018-02-12-read-compile-run-loop-a-tiny-repl-for-cpp/) if you are curious **how to use** it, **how it works** and **how to integrate** it.
+Checkout this [blog post](https://onqtam.github.io/programming/2018-02-12-read-compile-run-loop-a-tiny-repl-for-cpp/) if you are curious **how to use** it, **how it works** and **how to integrate** it.
 
 ## A fork of RCRL using libclang
 
